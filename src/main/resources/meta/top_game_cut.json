@@ -1,0 +1,47 @@
+[
+  {
+    "version": "10.4d",
+    "dateTime": "2026-03-19 15:00:00",
+    "cutMmr": 8300
+  },
+  {
+    "version": "10.4d",
+    "dateTime": "2026-03-11 12:00:00",
+    "cutMmr": 8200
+  },
+  {
+    "version": "10.4",
+    "dateTime": "2026-03-05 15:00:00",
+    "cutMmr": 8000
+  },
+  {
+    "version": "none",
+    "dateTime": "2026-02-27 16:00:00",
+    "cutMmr": 7900
+  },
+  {
+    "version": "10.3a",
+    "dateTime": "2026-02-20 14:30:00",
+    "cutMmr": 7400
+  },
+  {
+    "version": "none",
+    "dateTime": "2026-02-13 14:00:00",
+    "cutMmr": 6900
+  },
+  {
+    "version": "10.2b",
+    "dateTime": "2026-02-06 16:00:00",
+    "cutMmr": 6400
+  },
+  {
+    "version": "10.2",
+    "dateTime": "2026-02-05 15:00:00",
+    "cutMmr": 5700
+  },
+  {
+    "version": "10.1",
+    "dateTime": "2026-01-29 12:00:00",
+    "cutMmr": 5000
+  }
+]

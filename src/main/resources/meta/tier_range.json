@@ -1,0 +1,55 @@
+[
+  {
+    "SeasonId": [
+      39
+    ],
+    "IRON": {
+      "step": 4,
+      "gap": 149,
+      "start": 0,
+      "end": 599
+    },
+    "BRONZE": {
+      "step": 4,
+      "gap": 199,
+      "start": 600,
+      "end": 1399
+    },
+    "SILVER": {
+      "step": 4,
+      "gap": 249,
+      "start": 1400,
+      "end": 2399
+    },
+    "GOLD": {
+      "step": 4,
+      "gap": 299,
+      "start": 2400,
+      "end": 3599
+    },
+    "PLATINUM": {
+      "step": 4,
+      "gap": 349,
+      "start": 3600,
+      "end": 4999
+    },
+    "DIAMOND": {
+      "step": 4,
+      "gap": 349,
+      "start": 5000,
+      "end": 6399
+    },
+    "METEORITE": {
+      "step": 4,
+      "gap": 300,
+      "start": 6400,
+      "end": 7599
+    },
+    "MITHRIL": {
+      "step": 1,
+      "gap": 0,
+      "start": 7600,
+      "end": 99999
+    }
+  }
+]

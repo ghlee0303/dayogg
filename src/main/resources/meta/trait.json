@@ -1,0 +1,290 @@
+[
+  {
+    "code": "7000201",
+    "type": "CORE",
+    "group_code": "7000000",
+    "name": "취약"
+  },
+  {
+    "code": "7000401",
+    "type": "CORE",
+    "group_code": "7000000",
+    "name": "흡혈마"
+  },
+  {
+    "code": "7000601",
+    "type": "CORE",
+    "group_code": "7000000",
+    "name": "아드레날린"
+  },
+  {
+    "code": "7000701",
+    "type": "CORE",
+    "group_code": "7000000",
+    "name": "액셀러레이터"
+  },
+  {
+    "code": "7010501",
+    "type": "SUB",
+    "group_code": "7000000",
+    "name": "열세극복"
+  },
+  {
+    "code": "7010901",
+    "type": "SUB",
+    "group_code": "7000000",
+    "name": "광분"
+  },
+  {
+    "code": "7011001",
+    "type": "SUB",
+    "group_code": "7000000",
+    "name": "약자 멸시"
+  },
+  {
+    "code": "7011501",
+    "type": "SUB",
+    "group_code": "7000000",
+    "name": "상흔"
+  },
+  {
+    "code": "7011101",
+    "type": "SUB",
+    "group_code": "7000000",
+    "name": "곰 탈"
+  },
+  {
+    "code": "7011201",
+    "type": "SUB",
+    "group_code": "7000000",
+    "name": "멧돼지 탈"
+  },
+  {
+    "code": "7011301",
+    "type": "SUB",
+    "group_code": "7000000",
+    "name": "늑대 탈"
+  },
+  {
+    "code": "7011401",
+    "type": "SUB",
+    "group_code": "7000000",
+    "name": "들개 탈"
+  },
+  {
+    "code": "7000501",
+    "type": "CORE",
+    "group_code": "7300000",
+    "name": "벽력"
+  },
+  {
+    "code": "7300101",
+    "type": "CORE",
+    "group_code": "7300000",
+    "name": "스텔라 차지"
+  },
+  {
+    "code": "7300201",
+    "type": "CORE",
+    "group_code": "7300000",
+    "name": "도깨비불"
+  },
+  {
+    "code": "7300301",
+    "type": "CORE",
+    "group_code": "7300000",
+    "name": "와류"
+  },
+  {
+    "code": "7010701",
+    "type": "SUB",
+    "group_code": "7300000",
+    "name": "상처 악화"
+  },
+  {
+    "code": "7310101",
+    "type": "SUB",
+    "group_code": "7300000",
+    "name": "힘의 축적"
+  },
+  {
+    "code": "7310201",
+    "type": "SUB",
+    "group_code": "7300000",
+    "name": "서큘러 시스템"
+  },
+  {
+    "code": "7310301",
+    "type": "SUB",
+    "group_code": "7300000",
+    "name": "오버워치"
+  },
+  {
+    "code": "7310401",
+    "type": "SUB",
+    "group_code": "7300000",
+    "name": "철갑탄"
+  },
+  {
+    "code": "7310501",
+    "type": "SUB",
+    "group_code": "7300000",
+    "name": "R_echarger"
+  },
+  {
+    "code": "7310601",
+    "type": "SUB",
+    "group_code": "7300000",
+    "name": "속사"
+  },
+  {
+    "code": "7310701",
+    "type": "SUB",
+    "group_code": "7300000",
+    "name": "천상의 수집품"
+  },
+  {
+    "code": "7100101",
+    "type": "CORE",
+    "group_code": "7100000",
+    "name": "금강"
+  },
+  {
+    "code": "7100201",
+    "type": "CORE",
+    "group_code": "7100000",
+    "name": "불괴"
+  },
+  {
+    "code": "7100401",
+    "type": "CORE",
+    "group_code": "7100000",
+    "name": "빛의 수호"
+  },
+  {
+    "code": "7100501",
+    "type": "CORE",
+    "group_code": "7100000",
+    "name": "응징"
+  },
+  {
+    "code": "7110101",
+    "type": "SUB",
+    "group_code": "7100000",
+    "name": "대담"
+  },
+  {
+    "code": "7110201",
+    "type": "SUB",
+    "group_code": "7100000",
+    "name": "특공대"
+  },
+  {
+    "code": "7110401",
+    "type": "SUB",
+    "group_code": "7100000",
+    "name": "견고"
+  },
+  {
+    "code": "7110601",
+    "type": "SUB",
+    "group_code": "7100000",
+    "name": "먹보"
+  },
+  {
+    "code": "7110701",
+    "type": "SUB",
+    "group_code": "7100000",
+    "name": "불굴"
+  },
+  {
+    "code": "7111001",
+    "type": "SUB",
+    "group_code": "7100000",
+    "name": "진통제"
+  },
+  {
+    "code": "7111101",
+    "type": "SUB",
+    "group_code": "7100000",
+    "name": "경계심"
+  },
+  {
+    "code": "7111201",
+    "type": "SUB",
+    "group_code": "7100000",
+    "name": "담금질"
+  },
+  {
+    "code": "7200101",
+    "type": "CORE",
+    "group_code": "7200000",
+    "name": "초재생"
+  },
+  {
+    "code": "7200201",
+    "type": "CORE",
+    "group_code": "7200000",
+    "name": "증폭 드론"
+  },
+  {
+    "code": "7200301",
+    "type": "CORE",
+    "group_code": "7200000",
+    "name": "치유 드론"
+  },
+  {
+    "code": "7200501",
+    "type": "CORE",
+    "group_code": "7200000",
+    "name": "헌신"
+  },
+  {
+    "code": "7110801",
+    "type": "SUB",
+    "group_code": "7200000",
+    "name": "캠핑 가이드"
+  },
+  {
+    "code": "7210101",
+    "type": "SUB",
+    "group_code": "7200000",
+    "name": "가시 덤불"
+  },
+  {
+    "code": "7210401",
+    "type": "SUB",
+    "group_code": "7200000",
+    "name": "후방 보급"
+  },
+  {
+    "code": "7210801",
+    "type": "SUB",
+    "group_code": "7200000",
+    "name": "할인 쿠폰"
+  },
+  {
+    "code": "7211001",
+    "type": "SUB",
+    "group_code": "7200000",
+    "name": "사냥의 전율"
+  },
+  {
+    "code": "7211101",
+    "type": "SUB",
+    "group_code": "7200000",
+    "name": "코인 토스"
+  },
+  {
+    "code": "7211301",
+    "type": "SUB",
+    "group_code": "7200000",
+    "name": "폭발 선인장"
+  },
+  {
+    "code": "7211401",
+    "type": "SUB",
+    "group_code": "7200000",
+    "name": "위압감"
+  }
+]

@@ -1,0 +1,242 @@
+{
+  "0": {
+    "locale": {
+      "KO": "과거",
+      "EN": "Legacy"
+    }
+  },
+  "1": {
+    "locale": {
+      "KO": "EA 시즌 1",
+      "EN": "EA Season 1"
+    }
+  },
+  "2": {
+    "locale": {
+      "KO": "EA 프리 시즌 2",
+      "EN": "EA Pre Season 2"
+    }
+  },
+  "3": {
+    "locale": {
+      "KO": "EA 시즌 2",
+      "EN": "EA Season 2"
+    }
+  },
+  "4": {
+    "locale": {
+      "KO": "EA 프리 시즌 3",
+      "EN": "EA Pre Season 3"
+    }
+  },
+  "5": {
+    "locale": {
+      "KO": "EA 시즌 3",
+      "EN": "EA Season 3"
+    }
+  },
+  "6": {
+    "locale": {
+      "KO": "EA 프리 시즌 4",
+      "EN": "EA Pre Season 4"
+    }
+  },
+  "7": {
+    "locale": {
+      "KO": "EA 시즌 4",
+      "EN": "EA Season 4"
+    }
+  },
+  "8": {
+    "locale": {
+      "KO": "EA 프리 시즌 5",
+      "EN": "EA Pre Season 5"
+    }
+  },
+  "9": {
+    "locale": {
+      "KO": "EA 시즌 5",
+      "EN": "EA Season 5"
+    }
+  },
+  "10": {
+    "locale": {
+      "KO": "EA 프리 시즌 6",
+      "EN": "EA Pre Season 6"
+    }
+  },
+  "11": {
+    "locale": {
+      "KO": "EA 시즌 6",
+      "EN": "EA Season 6"
+    }
+  },
+  "12": {
+    "locale": {
+      "KO": "EA 프리 시즌 7",
+      "EN": "EA Pre Season 7"
+    }
+  },
+  "13": {
+    "locale": {
+      "KO": "EA 시즌 7",
+      "EN": "EA Season 7"
+    }
+  },
+  "14": {
+    "locale": {
+      "KO": "EA 프리 시즌 8",
+      "EN": "EA Pre Season 8"
+    }
+  },
+  "15": {
+    "locale": {
+      "KO": "EA 시즌 8",
+      "EN": "EA Season 8"
+    }
+  },
+  "16": {
+    "locale": {
+      "KO": "EA 프리 시즌 9",
+      "EN": "EA Pre Season 9"
+    }
+  },
+  "17": {
+    "locale": {
+      "KO": "EA 시즌 9",
+      "EN": "EA Season 9"
+    }
+  },
+  "18": {
+    "locale": {
+      "KO": "프리 시즌 1",
+      "EN": "Pre Season 1"
+    }
+  },
+  "19": {
+    "locale": {
+      "KO": "시즌 1",
+      "EN": "Season 1"
+    }
+  },
+  "20": {
+    "locale": {
+      "KO": "프리 시즌 2",
+      "EN": "Pre Season 2"
+    }
+  },
+  "21": {
+    "locale": {
+      "KO": "시즌 2",
+      "EN": "Season 2"
+    }
+  },
+  "22": {
+    "locale": {
+      "KO": "프리 시즌 3",
+      "EN": "Pre Season 3"
+    }
+  },
+  "23": {
+    "locale": {
+      "KO": "시즌 3",
+      "EN": "Season 3"
+    }
+  },
+  "24": {
+    "locale": {
+      "KO": "프리 시즌 4",
+      "EN": "Pre Season 4"
+    }
+  },
+  "25": {
+    "locale": {
+      "KO": "시즌 4",
+      "EN": "Season 4"
+    }
+  },
+  "26": {
+    "locale": {
+      "KO": "프리 시즌 5",
+      "EN": "Pre Season 5"
+    }
+  },
+  "27": {
+    "locale": {
+      "KO": "시즌 5",
+      "EN": "Season 5"
+    }
+  },
+  "28": {
+    "locale": {
+      "KO": "프리 시즌 6",
+      "EN": "Pre Season 6"
+    }
+  },
+  "29": {
+    "locale": {
+      "KO": "시즌 6",
+      "EN": "Season 6"
+    }
+  },
+  "30": {
+    "locale": {
+      "KO": "프리 시즌 7",
+      "EN": "Pre Season 7"
+    }
+  },
+  "31": {
+    "locale": {
+      "KO": "시즌 7",
+      "EN": "Season 7"
+    }
+  },
+  "32": {
+    "locale": {
+      "KO": "프리 시즌 8",
+      "EN": "Pre Season 8"
+    }
+  },
+  "33": {
+    "locale": {
+      "KO": "시즌 8",
+      "EN": "Season 8"
+    }
+  },
+  "34": {
+    "locale": {
+      "KO": "프리 시즌 9",
+      "EN": "Pre Season 9"
+    }
+  },
+  "35": {
+    "locale": {
+      "KO": "시즌 9",
+      "EN": "Season 9"
+    }
+  },
+  "36": {
+    "locale": {
+      "KO": "프리 시즌 10",
+      "EN": "Pre Season 10"
+    }
+  },
+  "37": {
+    "locale": {
+      "KO": "시즌 10",
+      "EN": "Season 10"
+    }
+  },
+  "38": {
+    "locale": {
+      "KO": "프리 시즌 11",
+      "EN": "Pre Season 11"
+    }
+  },
+  "39": {
+    "locale": {
+      "KO": "시즌 11",
+      "EN": "Season 11"
+    }
+  }
+}

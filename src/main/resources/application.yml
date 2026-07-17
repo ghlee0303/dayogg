@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: statistics
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/eternal_return?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:er_db}
+    password: ${DB_PASSWORD}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  threads:
+    virtual:
+      enabled: true
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  jackson:
+    mapper:
+      accept-case-insensitive-enums: true
+
+logging:
+  level:
+    org.hibernate.SQL: off
+    org.hibernate.orm.jdbc.bind: off
+
+scheduler:
+  tier-cut:
+    delay-minutes: 10
+
+api:
+  base:
+    url: ${GAME_API_URL:https://open-api.bser.io}
+    key: ${GAME_API_KEY}
+  bucket:
+    limits: 10
+
+sse:
+  timeout-minutes: 5
+
+thread:
+  timeout-seconds: 60
+  max-permits: 10
+
+path:
+  error-log: log/json/
+
+cache:
+  timeout-minutes: 30
+
+kind: Application

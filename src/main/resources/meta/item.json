@@ -1,0 +1,43 @@
+{
+  "502208": {
+    "name": "정찰 드론",
+    "item_enum": "VIEW",
+    "item_grade": "UNCOMMON",
+    "purchase": {
+      "DRONE": {
+        "cost": 25,
+        "qty": 1
+      },
+      "LUMI": {
+        "cost": 5,
+        "qty": 2
+      }
+    }
+  },
+  "502308": {
+    "name": "EMP 드론",
+    "item_enum": "VIEW",
+    "item_grade": "RARE",
+    "purchase": {
+      "DRONE": {
+        "cost": 25,
+        "qty": 1
+      }
+    }
+  },
+  "502207": {
+    "name": "카메라",
+    "item_enum": "VIEW",
+    "item_grade": "UNCOMMON",
+    "purchase": {
+      "DRONE": {
+        "cost": 25,
+        "qty": 1
+      },
+      "LUMI": {
+        "cost": 5,
+        "qty": 2
+      }
+    }
+  }
+}

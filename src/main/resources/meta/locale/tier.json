@@ -1,0 +1,68 @@
+{
+  "UNRANK": {
+    "locale": {
+      "KO": "언랭크",
+      "EN": "Unrank"
+    }
+  },
+  "IRON": {
+    "locale": {
+      "KO": "아이언",
+      "EN": "Iron"
+    }
+  },
+  "BRONZE": {
+    "locale": {
+      "KO": "브론즈",
+      "EN": "Bronze"
+    }
+  },
+  "SILVER": {
+    "locale": {
+      "KO": "실버",
+      "EN": "Silver"
+    }
+  },
+  "GOLD": {
+    "locale": {
+      "KO": "골드",
+      "EN": "Gold"
+    }
+  },
+  "PLATINUM": {
+    "locale": {
+      "KO": "플래티넘",
+      "EN": "Platinum"
+    }
+  },
+  "DIAMOND": {
+    "locale": {
+      "KO": "다이아몬드",
+      "EN": "Diamond"
+    }
+  },
+  "METEORITE": {
+    "locale": {
+      "KO": "메테오라이트",
+      "EN": "Meteorite"
+    }
+  },
+  "MITHRIL": {
+    "locale": {
+      "KO": "미스릴",
+      "EN": "Mithril"
+    }
+  },
+  "DEMIGOD": {
+    "locale": {
+      "KO": "데미갓",
+      "EN": "Demigod"
+    }
+  },
+  "ETERNITY": {
+    "locale": {
+      "KO": "이터니티",
+      "EN": "Eternity"
+    }
+  }
+}
