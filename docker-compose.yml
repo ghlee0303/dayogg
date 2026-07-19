@@ -26,7 +26,7 @@ services:
       MYSQL_DATABASE: eternal_return
       MYSQL_USER: ${DB_USERNAME:-er_db}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-${DB_PASSWORD}}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     ports:
       - "3306:3306"
     volumes:

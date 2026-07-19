@@ -25,7 +25,7 @@ services:
       MYSQL_DATABASE: eternal_return
       MYSQL_USER: ${DB_USERNAME:-er_db}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-${DB_PASSWORD}}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     # 운영: 포트 외부 노출 안 함. app 컨테이너가 내부 네트워크로만 접근
     expose:
       - "3306"
