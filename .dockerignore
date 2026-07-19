@@ -1,0 +1,26 @@
+# 빌드 산출물 / IDE / 로컬 설정 — 빌드 컨텍스트에서 제외
+build/
+.gradle/
+.idea/
+.vscode/
+*.iml
+
+# Gradle 캐시(래퍼 파일 2개만 남기고 제외 — .gitignore 정책과 동일)
+gradle/*
+!gradle/wrapper/
+gradle/wrapper/*
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# 시크릿 / 로컬 오버라이드
+.env
+application-local.yml
+**/application-local.yml
+log/
+
+# 문서 / VCS
+.git/
+.claude
+claude
+docs/
+*.md
