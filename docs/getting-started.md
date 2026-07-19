@@ -53,7 +53,7 @@ IntelliJ에서 실행할 경우 `Run/Debug Configurations → Environment variab
 
 ## 애플리케이션 설정 (`application.yml`)
 
-환경 변수가 아닌 고정 설정값입니다. 대부분 [동시성 설계](../README.md#동시성-설계)와 직접 연관됩니다.
+환경 변수가 아닌 고정 설정값입니다. 대부분 [동시성 설계](concurrency.md)와 직접 연관됩니다.
 
 | 설정 | 값 | 설명 |
 |------|----|------|
