@@ -13,6 +13,8 @@ services:
       # 운영은 스키마를 건드리지 않음(데이터 보존). 불일치 시 기동 실패로 조용한 손상 방지.
       # 최초 스키마 부트스트랩이 필요하면 .env 에 JPA_DDL_AUTO=update 로 1회만 덮어쓰고 다시 제거.
       JPA_DDL_AUTO: ${JPA_DDL_AUTO:-validate}
+      # 배포된 프론트 출처(콤마로 여러 개). .env 의 CORS_ALLOWED_ORIGINS 에 설정
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       GAME_API_URL: ${GAME_API_URL:-https://open-api.bser.io}
