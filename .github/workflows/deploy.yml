@@ -46,6 +46,21 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      # 서버의 compose 는 레포와 별개 복사본이라 stale 되기 쉬움.
+      # 배포 때마다 커밋된 compose 를 서버로 동기화해 항상 최신 설정으로 뜨게 함.
+      # (.env 는 서버에만 있는 시크릿이라 건드리지 않음)
+      - name: Sync compose file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: docker-compose.prod.yml
+          target: ${{ secrets.DEPLOY_PATH }}
+
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
         with:
