@@ -56,8 +56,13 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
+            # 디스크 부족(no space left)은 새 이미지 pull 단계에서 터지므로 pull '전에' 정리해 공간 확보.
+            # 실행 중 컨테이너가 물고 있는 이미지/볼륨(DB 데이터)은 삭제 대상이 아님 → 데이터 안전.
+            docker image prune -af
+            docker builder prune -af
+            docker container prune -f
             # private 이미지라면 서버도 ghcr 로그인 필요
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
-            docker image prune -f   # 안 쓰는 옛 이미지 정리
+            docker image prune -f   # 교체돼 미참조가 된 옛 이미지 즉시 회수
