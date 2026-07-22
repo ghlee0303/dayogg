@@ -28,6 +28,17 @@ spring:
     mapper:
       accept-case-insensitive-enums: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
 logging:
   level:
     org.hibernate.SQL: off
