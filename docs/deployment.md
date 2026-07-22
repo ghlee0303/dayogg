@@ -86,7 +86,7 @@ cd ~/dayogg
 
 docker compose -f docker-compose.prod.yml ps          # 컨테이너 상태
 docker compose -f docker-compose.prod.yml logs -f app # 앱 로그 실시간
-docker compose -f docker-compose.prod.yml logs mysql  # DB 로그
+docker compose -f docker-compose.prod.yml logs redis  # Redis 로그 (MySQL 은 RDS 라 여기 없음)
 
 # 수동으로 다시 받아 재기동
 docker compose -f docker-compose.prod.yml pull
@@ -119,7 +119,7 @@ sed -i 's/\r$//' /usr/local/bin/dayogg            # 혹시 CRLF면 정리
 ```bash
 dayogg status      # 컨테이너 상태 (인자 없으면 status)
 dayogg stats       # CPU/메모리 사용량
-dayogg logs        # 앱 로그 실시간 (dayogg logs mysql → DB 로그)
+dayogg logs        # 앱 로그 실시간 (dayogg logs redis → Redis 로그. MySQL 은 RDS)
 dayogg start       # 정지된 컨테이너 재개
 dayogg stop        # 정지 (컨테이너 유지)
 dayogg restart     # 재시작
@@ -136,9 +136,32 @@ dayogg help        # 도움말
 ### 자주 막히는 것
 
 - **Actions에서 ghcr pull 실패** → 이미지가 private인데 `GHCR_TOKEN` 없음/만료. 토큰 재발급하거나 패키지 public 전환.
-- **app이 mysql 연결 실패** → `.env`의 `DB_PASSWORD`가 mysql 컨테이너와 app에 같은 값으로 들어갔는지 확인. 비번 바꿨으면 기존 `mysql-data` 볼륨엔 옛 비번이 박혀 있음 → `docker compose ... down -v`로 볼륨 지우고 다시 (⚠️ 데이터 날아감).
+- **app이 RDS 연결 실패** → ① `.env`의 `DB_HOST`(RDS 엔드포인트)·`DB_USERNAME`·`DB_PASSWORD` 확인. ② **RDS 보안그룹**이 EC2 보안그룹(또는 프라이빗 IP)에서 3306 인바운드를 허용하는지. ③ RDS가 같은 VPC 프라이빗에 있는지.
+- **app 기동 시 스키마 검증 실패**(validate) → RDS에 스키마가 아직 없거나 엔티티와 불일치. 최초 1회는 기존 DB를 `mysqldump` → RDS import 로 옮겨야 함 (아래 D 참고). 스키마가 맞으면 정상 기동.
 - **8080 접속 안 됨** → `ufw allow 8080` 했는지, 클라우드면 보안그룹/인바운드 규칙도 확인.
-- **`ddl-auto: create`** → 앱 뜰 때마다 스키마 새로 만듦. 운영에서 데이터 유지하려면 `validate`/`none`으로 바꿔야 함 (application.yml).
+- **운영 스키마 정책** → 운영은 `JPA_DDL_AUTO=validate`(compose.prod)로 앱이 스키마를 건드리지 않음. 로컬/테스트는 기본 `create` 유지(application.yml).
+
+---
+
+## D. MySQL → RDS 이관 (최초 1회)
+
+메모리 절약을 위해 운영 DB는 EC2 컨테이너가 아니라 **RDS(MySQL)** 를 씀. Redis 는 EC2 유지.
+
+1. **RDS 생성** — MySQL 8.x, 같은 VPC 프라이빗. 퍼블릭 액세스는 끔.
+2. **RDS 보안그룹** — 인바운드 3306 을 **EC2 의 보안그룹**(소스에 SG 지정)에서 허용.
+3. **기존 데이터 이관** (EC2 의 옛 mysql 컨테이너가 아직 있을 때):
+   ```bash
+   # EC2 에서 기존 컨테이너 DB 덤프
+   docker exec -i <mysql컨테이너> mysqldump -u er_db -p eternal_return > dump.sql
+   # RDS 로 import (RDS 엔드포인트로)
+   mysql -h <RDS엔드포인트> -u er_db -p eternal_return < dump.sql
+   ```
+   > RDS 에 `eternal_return` 데이터베이스가 없으면 먼저 생성: `mysql -h <RDS> -u <admin> -p -e "CREATE DATABASE eternal_return;"`
+4. **`.env` 에 `DB_HOST=<RDS 엔드포인트>` 추가** (`.env.example` 참고).
+5. `dayogg up` 으로 재배포 → app 이 RDS 에 붙어 `validate` 통과하면 완료.
+
+> 새로 시작(이관할 데이터 없음)하는 경우엔 스키마가 비어 `validate` 가 실패함.
+> 이럴 땐 최초 1회만 `.env` 에 `JPA_DDL_AUTO=update` 를 넣어 스키마를 만든 뒤, 다시 지우고(=validate) 배포.
 
 ---
 

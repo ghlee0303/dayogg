@@ -18,7 +18,9 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      # 기본은 로컬/테스트용 create(빈 DB에 스키마 자동 생성).
+      # 운영(RDS)은 compose 에서 JPA_DDL_AUTO=validate 로 덮어써 데이터 보존 + 스키마 불일치 시 기동 실패.
+      ddl-auto: ${JPA_DDL_AUTO:create}
     show-sql: false
     properties:
       hibernate:

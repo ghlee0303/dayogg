@@ -5,39 +5,24 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_URL: jdbc:mysql://mysql:3306/eternal_return?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true
+      # MySQL 은 RDS 로 분리됨. .env 의 DB_HOST 에 RDS 엔드포인트 입력
+      # (예: DB_HOST=my-db.xxxxxx.ap-northeast-2.rds.amazonaws.com)
+      DB_URL: jdbc:mysql://${DB_HOST}:3306/eternal_return?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true
       DB_USERNAME: ${DB_USERNAME:-er_db}
       DB_PASSWORD: ${DB_PASSWORD}
+      # 운영은 스키마를 건드리지 않음(데이터 보존). 불일치 시 기동 실패로 조용한 손상 방지.
+      # 최초 스키마 부트스트랩이 필요하면 .env 에 JPA_DDL_AUTO=update 로 1회만 덮어쓰고 다시 제거.
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-validate}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       GAME_API_URL: ${GAME_API_URL:-https://open-api.bser.io}
       GAME_API_KEY: ${GAME_API_KEY}
     depends_on:
-      mysql:
-        condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
 
-  mysql:
-    image: mysql:8.4
-    environment:
-      MYSQL_DATABASE: eternal_return
-      MYSQL_USER: ${DB_USERNAME:-er_db}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-    # 운영: 포트 외부 노출 안 함. app 컨테이너가 내부 네트워크로만 접근
-    expose:
-      - "3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
-
+  # Redis 는 EC2 에 그대로 유지 (단일 인스턴스 + 캐시/분산락 용도라 외부화 불필요)
   redis:
     image: redis:7-alpine
     # 운영: 포트 외부 노출 안 함
@@ -53,5 +38,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  mysql-data:
   redis-data:
