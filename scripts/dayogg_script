@@ -8,7 +8,7 @@
 #   start              멈춘 컨테이너 재개
 #   stop               컨테이너 정지 (삭제 안 함)
 #   restart [서비스]   재시작
-#   up | deploy        새 이미지 pull 후 기동 (수동 배포)
+#   up | deploy        정리(clean) 후 새 이미지 pull → 기동 (수동 배포, 디스크 자동 확보)
 #   down               내리기 (⚠️ 컨테이너 삭제, DB 볼륨은 유지)
 #   pull               이미지만 최신으로 받기
 #   clean              디스크 정리 (안 쓰는 이미지/빌드캐시/정지 컨테이너, ⚠️ 볼륨은 안 건드림)
@@ -31,6 +31,17 @@ fi
 
 cd "$DIR"
 dc() { docker compose -f "$FILE" "$@"; }
+
+# 안 쓰는 이미지/빌드캐시/정지 컨테이너 정리. 볼륨(DB 데이터)은 절대 건드리지 않음.
+# 실행 중인 컨테이너가 물고 있는 이미지는 미참조가 아니라 삭제 대상이 아님 → DB 안전.
+prune_unused() {
+  echo "🧹 미참조 이미지 정리..."
+  docker image prune -af
+  echo "🧹 빌드 캐시 정리..."
+  docker builder prune -af
+  echo "🧹 정지된 컨테이너 정리..."
+  docker container prune -f
+}
 
 cmd="${1:-status}"   # 인자 없으면 status
 shift || true
@@ -59,9 +70,18 @@ case "$cmd" in
     echo "✅ restarted"
     ;;
   up|deploy)
+    # 디스크 부족(no space left)은 새 이미지를 받는 pull 단계에서 터지므로,
+    # pull '전에' 먼저 정리해 공간을 확보한다.
+    echo "== 배포 전 디스크 =="
+    df -h "$DIR" | tail -1
+    prune_unused
+    echo "== 정리 후 디스크 =="
+    df -h "$DIR" | tail -1
+    echo
+    echo "⬇️  새 이미지 pull..."
     dc pull
     dc up -d
-    docker image prune -f
+    docker image prune -f    # 방금 교체돼 미참조가 된 옛 이미지 즉시 회수
     echo "✅ deployed"
     dc ps
     ;;
@@ -73,17 +93,11 @@ case "$cmd" in
     echo "✅ down (DB 볼륨은 유지됨. 데이터까지 지우려면: dayogg down -v 대신 수동으로)"
     ;;
   clean)
-    # 안 쓰는 이미지/빌드캐시/정지 컨테이너 정리. 볼륨(DB 데이터)은 절대 건드리지 않음.
     echo "== 정리 전 =="
     df -h "$DIR" | tail -1
     docker system df
     echo
-    echo "🧹 dangling·미참조 이미지 정리..."
-    docker image prune -af
-    echo "🧹 빌드 캐시 정리..."
-    docker builder prune -af
-    echo "🧹 정지된 컨테이너 정리..."
-    docker container prune -f
+    prune_unused
     echo
     echo "== 정리 후 =="
     df -h "$DIR" | tail -1

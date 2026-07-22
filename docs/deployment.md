@@ -123,15 +123,15 @@ dayogg logs        # 앱 로그 실시간 (dayogg logs mysql → DB 로그)
 dayogg start       # 정지된 컨테이너 재개
 dayogg stop        # 정지 (컨테이너 유지)
 dayogg restart     # 재시작
-dayogg up          # 새 이미지 pull + 재기동 (수동 배포)
+dayogg up          # 정리(clean) 후 새 이미지 pull + 재기동 (수동 배포, 디스크 자동 확보)
 dayogg down        # 내리기 (DB 볼륨은 유지)
-dayogg clean       # 디스크 정리 (안 쓰는 이미지/빌드캐시/정지 컨테이너, 볼륨은 유지)
+dayogg clean       # 디스크 정리만 (안 쓰는 이미지/빌드캐시/정지 컨테이너, 볼륨은 유지)
 dayogg help        # 도움말
 ```
 
 - 항상 `~/dayogg`의 `docker-compose.prod.yml` 대상. 경로가 다르면 `DAYOGG_DIR` / `DAYOGG_FILE` 환경변수로 변경.
 - 실수로 DB 볼륨 날리는 걸 막으려고 `down -v` 는 스크립트에서 막아둠 (데이터 삭제는 수동으로만).
-- **디스크 꽉 차서 배포 실패**(`no space left on device`) 시: `dayogg clean` 으로 옛 이미지·빌드캐시 정리 후 `dayogg up` 재시도. 볼륨(DB)은 안 건드리므로 안전.
+- `dayogg up` 은 pull **전에** 자동으로 정리하므로 평소엔 `up` 만 쳐도 디스크가 확보됨. `clean` 은 배포 없이 정리만 하고 싶을 때 쓰면 됨. 어느 쪽도 볼륨(DB)은 안 건드림.
 
 ### 자주 막히는 것
 
