@@ -99,15 +99,18 @@ docker compose -f docker-compose.prod.yml down        # 볼륨은 유지됨
 
 ### `dayogg` 관리 스크립트 (추천)
 
-위 `docker compose -f docker-compose.prod.yml ...` 를 매번 치기 번거로우니 래퍼 스크립트를 씀. 소스는 `scripts/dayogg`.
+위 `docker compose -f docker-compose.prod.yml ...` 를 매번 치기 번거로우니 래퍼 스크립트를 씀. 소스는 `scripts/dayogg_script`.
 
 **설치 (서버에서 한 번만):**
 
+> ⚠️ 배포 폴더가 `~/dayogg` 라서, 스크립트를 `~/dayogg` 라는 이름으로 올리면 폴더와 충돌함.
+> 반드시 **다른 이름(`dayogg_script`)** 으로 업로드한 뒤, 명령어 이름(`dayogg`)으로 이동시킬 것.
+
 ```bash
-scp -P <포트> scripts/dayogg <user>@<서버IP>:~/   # 로컬에서 업로드
+scp -P <포트> scripts/dayogg_script <user>@<서버IP>:~/dayogg_script   # 배포 폴더와 다른 이름으로 업로드
 # 서버에서:
-chmod +x ~/dayogg
-sudo mv ~/dayogg /usr/local/bin/dayogg            # 어디서든 dayogg 실행 가능
+chmod +x ~/dayogg_script
+sudo mv ~/dayogg_script /usr/local/bin/dayogg     # 명령어 이름은 dayogg (폴더 ~/dayogg 와 위치가 달라 충돌 없음)
 sed -i 's/\r$//' /usr/local/bin/dayogg            # 혹시 CRLF면 정리
 ```
 
@@ -122,11 +125,13 @@ dayogg stop        # 정지 (컨테이너 유지)
 dayogg restart     # 재시작
 dayogg up          # 새 이미지 pull + 재기동 (수동 배포)
 dayogg down        # 내리기 (DB 볼륨은 유지)
+dayogg clean       # 디스크 정리 (안 쓰는 이미지/빌드캐시/정지 컨테이너, 볼륨은 유지)
 dayogg help        # 도움말
 ```
 
 - 항상 `~/dayogg`의 `docker-compose.prod.yml` 대상. 경로가 다르면 `DAYOGG_DIR` / `DAYOGG_FILE` 환경변수로 변경.
 - 실수로 DB 볼륨 날리는 걸 막으려고 `down -v` 는 스크립트에서 막아둠 (데이터 삭제는 수동으로만).
+- **디스크 꽉 차서 배포 실패**(`no space left on device`) 시: `dayogg clean` 으로 옛 이미지·빌드캐시 정리 후 `dayogg up` 재시도. 볼륨(DB)은 안 건드리므로 안전.
 
 ### 자주 막히는 것
 
