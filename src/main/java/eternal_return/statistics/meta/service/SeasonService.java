@@ -1,5 +1,7 @@
 package eternal_return.statistics.meta.service;
 
+import eternal_return.statistics.core.annotation.service_logging.LoggingType;
+import eternal_return.statistics.core.annotation.service_logging.ServiceLogging;
 import eternal_return.statistics.core.api.ApiService;
 import eternal_return.statistics.meta.meta.season.SeasonInfo;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ public class SeasonService {
 
     private static final String API_PATH = "v2/data/Season";
 
+    @ServiceLogging(loggingType = LoggingType.PARENT)
     public List<SeasonInfo> getSeason() {
         return objectMapper.treeToValue(
                 apiService.callApi(API_PATH).get("data"),

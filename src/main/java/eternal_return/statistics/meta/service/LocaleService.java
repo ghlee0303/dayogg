@@ -1,5 +1,7 @@
 package eternal_return.statistics.meta.service;
 
+import eternal_return.statistics.core.annotation.service_logging.LoggingType;
+import eternal_return.statistics.core.annotation.service_logging.ServiceLogging;
 import eternal_return.statistics.core.api.ApiService;
 import eternal_return.statistics.meta.meta.LocaleMeta;
 import eternal_return.statistics.meta.json.LocaleJson;
@@ -21,6 +23,7 @@ public class LocaleService {
     private final ApiService apiService;
     private final ObjectMapper objectMapper;
 
+    @ServiceLogging(loggingType = LoggingType.PARENT)
     public LocaleMeta getL10n() {
         LocaleMeta localeMeta = new LocaleMeta();
 

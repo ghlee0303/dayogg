@@ -1,5 +1,7 @@
 package eternal_return.statistics.meta.service;
 
+import eternal_return.statistics.core.annotation.service_logging.LoggingType;
+import eternal_return.statistics.core.annotation.service_logging.ServiceLogging;
 import eternal_return.statistics.core.api.ApiService;
 import eternal_return.statistics.meta.json.WeaponJson;
 import eternal_return.statistics.meta.meta.item.EquipInfo;
@@ -19,6 +21,7 @@ public class WeaponService {
 
     private static final String API_PATH = "v2/data/ItemWeapon";
 
+    @ServiceLogging(loggingType = LoggingType.PARENT)
     public List<EquipInfo> getWeapon() {
         List<WeaponJson> weapons = objectMapper.treeToValue(
                 apiService.callApi(API_PATH).get("data"),
