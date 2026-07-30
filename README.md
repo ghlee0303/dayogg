@@ -98,3 +98,4 @@ src/main/java/eternal_return/statistics/
 
 - [시작하기](docs/getting-started.md) — 요구 사항, 환경 변수, 실행·빌드, `application.yml` 설정값
 - [코드 컨벤션](docs/conventions.md) — 계층 구조, QueryDSL·MapStruct·AOP 로깅, 예외 처리, 버킷 사용 규칙
+- [구조화 로깅](docs/logging.md) — JSON 로그 구조, `LogContext`·MDC·`StructuredLog` 사용법, `code`·`idempotentKey` 추적 축
