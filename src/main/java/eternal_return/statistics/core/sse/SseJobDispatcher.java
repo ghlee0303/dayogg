@@ -11,6 +11,7 @@ import eternal_return.statistics.core.thread.ThreadExecutor;
 import eternal_return.statistics.core.thread.exception.ThreadTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -36,11 +37,18 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class SseJobDispatcher {
 
+    /** 잡 단위 추적 축. 요청의 {@code code} 는 잡 쓰레드까지 1:1로 이어지지 않는다. */
+    private static final String JOB_KEY = "idempotentKey";
+
     private final IdempotentService idempotentService;
     private final SseService sseService;
     private final ThreadExecutor threadExecutor;
 
     public <T> SseEmitter controllerJobStart(String idempotentKey, Supplier<T> task) {
+        // 요청 로그에 잡의 식별자를 남긴다. 요청 로그의 code → idempotentKey → 잡 로그 순으로 추적한다.
+        // (MDC 정리는 ControllerLoggingAspect 가 요청 종료 시 일괄 복원한다)
+        MDC.put(JOB_KEY, idempotentKey);
+
         String sseKey = UUID.randomUUID().toString();
         SseEmitter sseEmitter = sseService.subscribe(sseKey);
 
@@ -109,6 +117,12 @@ public class SseJobDispatcher {
             String sseKey,
             Supplier<T> task
     ) {
+        // 요청 쪽 MDC(code 등)가 가상 쓰레드로 상속돼 따라올 수 있다.
+        // 요청 N개가 잡 1개를 공유하므로(joinOrCreate) 특정 요청의 code 를 잡에 붙이면 오해를 부른다.
+        // 잡의 추적 축은 idempotentKey 하나로 세운다.
+        MDC.clear();
+        MDC.put(JOB_KEY, idempotentKey);
+
         try {
             T result = task.get();
             sendToAll(idempotentKey, sseKey, SseStatus.MESSAGE, result);
@@ -119,8 +133,14 @@ public class SseJobDispatcher {
 
         } catch (Exception e) {
             // 예상치 못한 예외 — 서버 로그에 스택트레이스 기록
-            log.error("[SSE] Unexpected error for idempotentKey={}", idempotentKey, e);
+            log.atError()
+                    .addKeyValue("layer", "sse")
+                    .setCause(e)
+                    .log("[SSE] unexpected error");
             sendToAll(idempotentKey, sseKey, SseStatus.ERROR, ErrorResponse.unexpected("처리 중 오류가 발생했습니다."));
+
+        } finally {
+            MDC.clear();
         }
     }
 
@@ -129,7 +149,11 @@ public class SseJobDispatcher {
             Idempotent idempotent = idempotentService.finish(idempotentKey);
             sseService.sendByIdempotent(idempotent, event, data);
         } catch (Exception e) {
-            log.warn("[SSE] finish failed for key={}, fallback to sseKey={}", idempotentKey, fallbackSseKey, e);
+            log.atWarn()
+                    .addKeyValue("layer", "sse")
+                    .addKeyValue("sseKey", fallbackSseKey)
+                    .setCause(e)
+                    .log("[SSE] finish failed, fallback to sseKey");
             sseService.send(fallbackSseKey, event, data);
             sseService.remove(fallbackSseKey);
         }

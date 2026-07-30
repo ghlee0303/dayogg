@@ -8,14 +8,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.slf4j.spi.LoggingEventBuilder;
 import org.springframework.stereotype.Component;
 
 /**
  * {@link ServiceLogging} 어노테이션이 붙은 Service 메서드를 감싸
- * 실행 시작·종료·오류를 로깅하는 AOP Aspect.
+ * 실행 종료·오류를 로깅하는 AOP Aspect.
  *
- * <p>각 호출마다 6자리 랜덤 코드({@code code})를 생성하여
- * START → END(또는 ERROR) 로그를 연결할 수 있다.
+ * <p>로그는 JSON 이벤트 한 개로 나가며, {@link LogContext} 에 쌓인 값과
+ * {@code elapsedMs} 를 최상위 필드로 승격시킨다. 요청 단위 추적 코드({@code code})는
+ * {@link eternal_return.statistics.core.annotation.controller_logging.ControllerLoggingAspect}
+ * 가 MDC 에 넣은 값이 자동으로 따라붙는다.
  *
  * <p>예외 종류와 무관하게 모든 오류를 로깅한 뒤 원본 예외를 그대로 전파한다.
  */
@@ -48,25 +51,38 @@ public class ServiceLoggingAspect {
 
     private void logSuccess(String methodName, ServiceLogging serviceLogging, long elapsed) {
         switch (serviceLogging.loggingType()) {
-            case PARENT -> log.info("[{}] | {}ms | {}", methodName, elapsed, LogContext.toStringAndClear());
+            case PARENT -> {
+                LoggingEventBuilder event = log.atInfo()
+                        .addKeyValue("layer", "service")
+                        .addKeyValue("method", methodName)
+                        .addKeyValue("elapsedMs", elapsed);
+
+                LogContext.drainMap().forEach(event::addKeyValue);
+                event.log("[{}] done", methodName);
+            }
             case CHILD -> LogContext.put(methodName, elapsed);
         }
     }
 
     private void logFailure(String methodName, ServiceLogging serviceLogging, Exception e) {
-        log.error("[{}-MSG] | {}", methodName, e.getMessage());
+        LoggingEventBuilder event = log.atError()
+                .addKeyValue("layer", "service")
+                .addKeyValue("method", methodName)
+                .addKeyValue("error.type", errorType(e))
+                .addKeyValue("error.message", e.getMessage());
 
-        String ctx = drainLogContext(serviceLogging.loggingType()) + exceptionContext(e);
-        if (!ctx.isEmpty()) {
-            log.error("[{}-CTX] | {}", methodName, ctx);
+        // CHILD 는 비우지 않는다. 바깥 PARENT 가 flush 할 때 함께 필드로 나가야 한다.
+        if (serviceLogging.loggingType() == LoggingType.PARENT) {
+            LogContext.drainMap().forEach(event::addKeyValue);
         }
+        if (e instanceof BusinessException be) {
+            be.getContext().forEach(event::addKeyValue);
+        }
+
+        event.log("[{}] failed", methodName);
     }
 
-    private String drainLogContext(LoggingType type) {
-        return type == LoggingType.PARENT ? LogContext.toStringAndClear() : "";
-    }
-
-    private String exceptionContext(Exception e) {
-        return (e instanceof BusinessException be) ? be.toStringContext() : "";
+    private String errorType(Exception e) {
+        return (e instanceof BusinessException be) ? be.getErrorType() : e.getClass().getSimpleName();
     }
 }

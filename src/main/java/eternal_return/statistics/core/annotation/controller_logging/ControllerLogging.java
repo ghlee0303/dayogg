@@ -9,12 +9,9 @@ import java.lang.annotation.Target;
  * Controller 메서드에 붙이면 {@link ControllerLoggingAspect}가
  * 요청 시작·종료·오류를 자동으로 로깅한다.
  *
- * <p>로그 형식:
- * <pre>
- * [C_START] [코드] METHOD URI | IP: x.x.x.x | tag: {value}
- * [C_END]   [코드] METHOD URI | Nms
- * [C_ERROR] [코드] URI | IP: x.x.x.x | 메시지
- * </pre>
+ * <p>JSON 이벤트 한 개로 나가며 {@code code}·{@code http.method}·{@code http.uri}·
+ * {@code client.ip}·{@code tag}·{@code elapsedMs} 가 최상위 필드로 붙는다.
+ * 실패 시 {@code error.type}·{@code error.message} 가 추가된다.
  *
  * <p>사용 예:
  * <pre>

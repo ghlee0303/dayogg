@@ -11,7 +11,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e) {
-        log.warn("[EXCEPTION] {}", e.getLogMessage());
+        log.atWarn()
+                .addKeyValue("layer", "exception")
+                .addKeyValue("error.type", e.getErrorType())
+                .addKeyValue("error.message", e.getLogMessage())
+                .log("[EXCEPTION] {}", e.getLogMessage());
         return ResponseEntity.status(e.getHttpStatus())
                 .body(ErrorResponse.fromBusiness(e));
     }

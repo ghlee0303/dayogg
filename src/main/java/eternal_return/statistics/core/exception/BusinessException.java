@@ -1,6 +1,5 @@
 package eternal_return.statistics.core.exception;
 
-import eternal_return.statistics.common.utils.MapUtils;
 import eternal_return.statistics.core.exception.enums.ExceptionResponseEnum;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -38,11 +37,5 @@ public class BusinessException extends RuntimeException {
     public BusinessException withContext(String key, Object value) {
         this.context.put(key, value);
         return this;
-    }
-
-    public String toStringContext() {
-        return !context.isEmpty()
-                ? " | " + MapUtils.toString(context)
-                : "";
     }
 }

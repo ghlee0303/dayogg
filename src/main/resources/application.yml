@@ -1,6 +1,9 @@
 spring:
   application:
     name: statistics
+  main:
+    # 배너는 로깅 시스템을 안 거쳐 평문으로 나온다 → "1줄 = 1 JSON 이벤트" 전제가 깨지므로 끈다.
+    banner-mode: "off"
   datasource:
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/eternal_return?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -42,7 +45,14 @@ management:
         enabled: true
 
 logging:
+  # 로그 1줄 = JSON 이벤트 1개. CloudWatch Logs Insights 가 필드로 파싱한다.
+  structured:
+    format:
+      console: ecs
   level:
+    # 수집량이 곧 CloudWatch 비용이다. 프레임워크 로그는 warn 이상만 내보낸다.
+    root: warn
+    eternal_return.statistics: info
     org.hibernate.SQL: off
     org.hibernate.orm.jdbc.bind: off
 

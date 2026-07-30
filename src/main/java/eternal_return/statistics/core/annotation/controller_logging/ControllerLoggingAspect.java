@@ -6,16 +6,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.slf4j.MDC;
+import org.slf4j.spi.LoggingEventBuilder;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * {@link ControllerLogging} 어노테이션이 붙은 Controller 메서드를 감싸
- * HTTP 요청의 시작·종료·오류를 로깅하는 AOP Aspect.
+ * HTTP 요청의 종료·오류를 로깅하는 AOP Aspect.
  *
- * <p>각 요청마다 6자리 랜덤 코드({@code code})를 생성하여
- * START → END(또는 ERROR) 로그를 연결할 수 있다.
+ * <p>각 요청마다 6자리 랜덤 코드({@code code})를 생성해 MDC 에 넣는다.
+ * 같은 스레드에서 나오는 하위 서비스 로그에도 자동으로 붙어 요청 단위 추적 축이 된다.
+ * 요청이 끝나면 진입 시점의 MDC 로 되돌린다.
  *
  * <p>클라이언트 IP는 리버스 프록시 헤더({@code X-Forwarded-For} 등)를 우선 확인하고,
  * 없으면 {@code remoteAddr}을 사용한다.
@@ -25,6 +29,9 @@ import java.util.concurrent.ThreadLocalRandom;
 @Slf4j
 @RequiredArgsConstructor
 public class ControllerLoggingAspect {
+
+    private static final String CODE_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final int CODE_LENGTH = 6;
 
     private final HttpServletRequest request;
 
@@ -42,21 +49,60 @@ public class ControllerLoggingAspect {
         String url = request.getRequestURI();
         String method = request.getMethod();
         String tag = controllerLogging.value();
-        // 동일 요청의 START·END 로그를 연결하기 위한 6자리 랜덤 코드
 
+        // 같은 요청에서 나온 로그를 잇는 추적 축. MDC 에 넣으면 하위 서비스 로그까지 따라붙는다.
+        Map<String, String> mdcSnapshot = MDC.getCopyOfContextMap();
+        MDC.put("code", generateCode());
         long start = System.currentTimeMillis();
 
         try {
             Object result = joinPoint.proceed();
-            long elapsed = System.currentTimeMillis() - start;
 
-            log.info("[{}_{}] | IP: {} | tag: {} | {}ms", method, url, ip, tag, elapsed);
+            requestEvent(log.atInfo(), method, url, ip, tag)
+                    .addKeyValue("elapsedMs", System.currentTimeMillis() - start)
+                    .log("[{} {}] done", method, url);
             return result;
 
         } catch (RuntimeException e) {
-            log.error("[{}_{}] | IP: {} | {}", method, url, ip, e.getMessage());
+            requestEvent(log.atError(), method, url, ip, tag)
+                    .addKeyValue("error.type", e.getClass().getSimpleName())
+                    .addKeyValue("error.message", e.getMessage())
+                    .log("[{} {}] failed", method, url);
             throw e;
+
+        } finally {
+            // code 외에 요청 처리 중 추가된 키(idempotentKey 등)까지 한 번에 되돌린다.
+            restoreMdc(mdcSnapshot);
         }
+    }
+
+    private void restoreMdc(Map<String, String> snapshot) {
+        if (snapshot == null) {
+            MDC.clear();
+            return;
+        }
+
+        MDC.setContextMap(snapshot);
+    }
+
+    private LoggingEventBuilder requestEvent(
+            LoggingEventBuilder event, String method, String url, String ip, String tag
+    ) {
+        return event.addKeyValue("layer", "controller")
+                .addKeyValue("http.method", method)
+                .addKeyValue("http.uri", url)
+                .addKeyValue("client.ip", ip)
+                .addKeyValue("tag", tag);
+    }
+
+    /** 요청 추적용 6자리 영숫자 코드. */
+    private String generateCode() {
+        StringBuilder sb = new StringBuilder(CODE_LENGTH);
+        for (int i = 0; i < CODE_LENGTH; i++) {
+            sb.append(CODE_CHARS.charAt(ThreadLocalRandom.current().nextInt(CODE_CHARS.length())));
+        }
+
+        return sb.toString();
     }
 
     /**

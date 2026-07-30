@@ -1,5 +1,6 @@
 package eternal_return.statistics.player.controller;
 
+import eternal_return.statistics.core.annotation.controller_logging.ControllerLogging;
 import eternal_return.statistics.core.sse.SseJobDispatcher;
 import eternal_return.statistics.player.service.PlayerService;
 import eternal_return.statistics.player.service.facade.PlayerInfoFacade;
@@ -21,6 +22,7 @@ public class PlayerSseController {
     private final SseJobDispatcher sseJobDispatcher;
 
     @GetMapping("/info")
+    @ControllerLogging("player-info")
     public ResponseEntity<SseEmitter> sseFetchPlayerInfo(
             @RequestParam String name
     ) {
@@ -33,6 +35,7 @@ public class PlayerSseController {
     }
 
     @GetMapping("/refresh")
+    @ControllerLogging("player-refresh")
     public ResponseEntity<SseEmitter> sseFetchRefresh(
             @RequestParam Long playerId
     ) {

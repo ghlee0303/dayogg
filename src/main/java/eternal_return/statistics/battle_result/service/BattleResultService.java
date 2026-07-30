@@ -39,7 +39,7 @@ public class BattleResultService {
     private final BattleResultMapper battleResultMapper;
     private final TierService tierService;
 
-    @ServiceLogging(loggingType = LoggingType.PARENT)
+    @ServiceLogging
     public BattleResultApiResult fetchNewBattleResult(PlayerDto player) {
         Integer lastBattleResultId = battleResultDslRepository.findLatestGameIdByPlayer(player.id());
 

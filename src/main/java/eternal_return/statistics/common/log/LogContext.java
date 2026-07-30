@@ -52,6 +52,19 @@ public class LogContext {
         return sb.toString();
     }
 
+    /**
+     * 문자열로 평탄화하지 않고 스냅샷 맵을 반환한 뒤 컨텍스트를 비운다.
+     *
+     * <p>{@link #toStringAndClear()} 와 달리 값의 타입이 보존되므로
+     * 숫자는 JSON 숫자 필드로 나갈 수 있다.
+     */
+    public static Map<String, Object> drainMap() {
+        Map<String, Object> map = new LinkedHashMap<>(ctx.get());
+        ctx.remove();
+
+        return map;
+    }
+
     public static String toStringAndClear() {
         Map<String, Object> map = new LinkedHashMap<>(ctx.get());
         ctx.remove();
