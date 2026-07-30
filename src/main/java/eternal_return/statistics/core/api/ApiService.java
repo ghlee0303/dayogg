@@ -1,6 +1,7 @@
 package eternal_return.statistics.core.api;
 
 import eternal_return.statistics.common.log.LogContext;
+import eternal_return.statistics.common.log.StructuredLog;
 import eternal_return.statistics.core.bucket.BucketService;
 import eternal_return.statistics.core.exception.BusinessException;
 import eternal_return.statistics.core.exception.enums.ExceptionResponseEnum;
@@ -74,7 +75,10 @@ public class ApiService {
                 return response;
             }
 
-            log.warn("[API] null response | attempt {}/3 | uri: {}", attempt, uri);
+            StructuredLog.warn(log, "api")
+                    .addKeyValue("attempt", attempt)
+                    .addKeyValue("http.uri", uri)
+                    .log("[API] null response");
         }
 
         throw new BusinessException(ExceptionResponseEnum.SERVER_ERROR, "API", LogMessageEnum.NULL_VALUE.format(uri));

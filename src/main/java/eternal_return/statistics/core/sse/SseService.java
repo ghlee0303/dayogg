@@ -1,5 +1,6 @@
 package eternal_return.statistics.core.sse;
 
+import eternal_return.statistics.common.log.StructuredLog;
 import eternal_return.statistics.core.sse.enums.SseStatus;
 import eternal_return.statistics.core.idempotent.Idempotent;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +58,9 @@ public class SseService {
         if (emitter == null) return; // 아직 구독하지 않았거나 이미 종료된 경우
 
         if (data == null) {
-            log.warn("[SSE-SEND] data is null, skip");
+            StructuredLog.warn(log, "sse")
+                    .addKeyValue("sseKey", sseKey)
+                    .log("[SSE-SEND] data is null, skip");
             return;
         }
 
@@ -73,17 +76,20 @@ public class SseService {
             emitter.send(builder);
 
             if (SseStatus.OPEN != event) {
-                log.info("[SSE-SEND] {} : {}",
-                        event != null ? event : SseStatus.MESSAGE,
-                        data
-                );
+                StructuredLog.info(log, "sse")
+                        .addKeyValue("sseKey", sseKey)
+                        .addKeyValue("event", (event != null ? event : SseStatus.MESSAGE).getName())
+                        .addKeyValue("dataType", data.getClass().getSimpleName())
+                        .log("[SSE-SEND] sent");
             }
 
         } catch (Exception e) {
             // 전송 실패 시 emitter를 맵에서 제거하고 오류 완료 처리
             emitters.remove(sseKey, emitter);
             emitter.completeWithError(e);
-            log.warn("[SSE-SEND] send failed for key={}: {}", sseKey, e.getMessage());
+            StructuredLog.warn(log, "sse", e)
+                    .addKeyValue("sseKey", sseKey)
+                    .log("[SSE-SEND] send failed");
         }
     }
 

@@ -1,5 +1,6 @@
 package eternal_return.statistics.core.redis;
 
+import eternal_return.statistics.common.log.StructuredLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -59,7 +60,9 @@ public class RedisJsonStore {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            StructuredLog.error(log, "redis", e)
+                    .addKeyValue("operation", "serialize")
+                    .log("[REDIS] serialization failed");
             throw new IllegalStateException(
                     "Redis value serialization failed"
             );
@@ -70,7 +73,10 @@ public class RedisJsonStore {
         try {
             return objectMapper.readValue(value, type);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            StructuredLog.error(log, "redis", e)
+                    .addKeyValue("operation", "deserialize")
+                    .addKeyValue("type", type.getSimpleName())
+                    .log("[REDIS] deserialization failed");
             throw new IllegalStateException(
                     "Redis value deserialization failed"
             );
