@@ -1,5 +1,6 @@
 package eternal_return.statistics.core.annotation.controller_logging;
 
+import eternal_return.statistics.common.log.TraceCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +12,6 @@ import org.slf4j.spi.LoggingEventBuilder;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * {@link ControllerLogging} 어노테이션이 붙은 Controller 메서드를 감싸
@@ -29,9 +29,6 @@ import java.util.concurrent.ThreadLocalRandom;
 @Slf4j
 @RequiredArgsConstructor
 public class ControllerLoggingAspect {
-
-    private static final String CODE_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private static final int CODE_LENGTH = 6;
 
     private final HttpServletRequest request;
 
@@ -52,7 +49,7 @@ public class ControllerLoggingAspect {
 
         // 같은 요청에서 나온 로그를 잇는 추적 축. MDC 에 넣으면 하위 서비스 로그까지 따라붙는다.
         Map<String, String> mdcSnapshot = MDC.getCopyOfContextMap();
-        MDC.put("code", generateCode());
+        MDC.put("code", TraceCode.generate());
         long start = System.currentTimeMillis();
 
         try {
@@ -93,16 +90,6 @@ public class ControllerLoggingAspect {
                 .addKeyValue("http.uri", url)
                 .addKeyValue("client.ip", ip)
                 .addKeyValue("tag", tag);
-    }
-
-    /** 요청 추적용 6자리 영숫자 코드. */
-    private String generateCode() {
-        StringBuilder sb = new StringBuilder(CODE_LENGTH);
-        for (int i = 0; i < CODE_LENGTH; i++) {
-            sb.append(CODE_CHARS.charAt(ThreadLocalRandom.current().nextInt(CODE_CHARS.length())));
-        }
-
-        return sb.toString();
     }
 
     /**
