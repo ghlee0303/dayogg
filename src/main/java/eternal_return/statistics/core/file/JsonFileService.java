@@ -1,15 +1,11 @@
 package eternal_return.statistics.core.file;
 
-import eternal_return.statistics.common.utils.DateTimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ClassUtils;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 
 import java.io.File;
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -27,19 +23,6 @@ public class JsonFileService {
 
         objectMapper.writerWithDefaultPrettyPrinter()
                 .writeValue(new File(filePath), json);
-    }
-
-    public String saveErrorJsonFile(JsonNode node, String uri) {
-        String filePath = resolveBasePath() + jsonDir + "log/";
-        String fileName = DateTimeUtils.fromLocalDateTime(LocalDateTime.now());
-
-        ObjectNode objectNode = (ObjectNode) node;
-        objectNode.put("uri", uri);
-
-        objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValue(new File(objectNode.asString()), filePath + fileName);
-
-        return fileName;
     }
 
     private String resolveBasePath() {

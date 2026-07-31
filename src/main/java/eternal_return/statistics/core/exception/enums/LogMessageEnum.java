@@ -9,7 +9,7 @@ import lombok.Getter;
 public enum LogMessageEnum {
     NOT_FOUND("Not Found: {}"),
     NULL_VALUE("value null: {}"),
-    API_BAD_STATUS("api bad {} | report file : {}"),
+    API_BAD_STATUS("api bad {}"),
     TIMEOUT_THREAD("thread timeout | wait count: {}"),
     TIMEOUT_DISTRIBUTED_LOCK("distributed lock timeout: {}"),
     NULL_IDEMPOTENT("idempotent null | key: {}"),

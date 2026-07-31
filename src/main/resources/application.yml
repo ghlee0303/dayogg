@@ -74,9 +74,6 @@ thread:
   timeout-seconds: 60
   max-permits: 10
 
-path:
-  error-log: log/json/
-
 cache:
   timeout-minutes: 30
 

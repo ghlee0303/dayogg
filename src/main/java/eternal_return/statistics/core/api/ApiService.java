@@ -6,32 +6,26 @@ import eternal_return.statistics.core.bucket.BucketService;
 import eternal_return.statistics.core.exception.BusinessException;
 import eternal_return.statistics.core.exception.enums.ExceptionResponseEnum;
 import eternal_return.statistics.core.exception.enums.LogMessageEnum;
-import eternal_return.statistics.core.file.JsonFileService;
-import eternal_return.statistics.common.utils.DateTimeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ApiService {
 
+    /** {@code error.payload} 상한 (4KB) */
+    private static final int PAYLOAD_MAX_LENGTH = 4096;
+
     private final RestClient restClient;
     private final BucketService bucketService;
     private final ObjectMapper objectMapper;
-    private final JsonFileService jsonFileService;
-
-    @Value("${path.error-log}")
-    private String errorLogPath;
 
     public JsonNode callApi(String uri) {
         long start = System.currentTimeMillis();
@@ -40,8 +34,8 @@ public class ApiService {
         int status = apiResultNode.get("code").asInt();
 
         switch (status) {
-            case 400, 500 -> throw apiExceptionSave(apiResultNode, uri, status, ExceptionResponseEnum.SERVER_ERROR);
-            case 403, 429 -> throw apiExceptionSave(apiResultNode, uri, status, ExceptionResponseEnum.TOO_MANY_REQUESTS);
+            case 400, 500 -> throw apiBadStatus(apiResultNode, uri, status, ExceptionResponseEnum.SERVER_ERROR);
+            case 403, 429 -> throw apiBadStatus(apiResultNode, uri, status, ExceptionResponseEnum.TOO_MANY_REQUESTS);
         }
 
         long elapsed = System.currentTimeMillis() - start;
@@ -84,27 +78,26 @@ public class ApiService {
         throw new BusinessException(ExceptionResponseEnum.SERVER_ERROR, "API", LogMessageEnum.NULL_VALUE.format(uri));
     }
 
-    private BusinessException apiExceptionSave(
+    private BusinessException apiBadStatus(
             JsonNode apiResultNode, String uri, int status,
             ExceptionResponseEnum exceptionResponseEnum
     ) {
-        String fileName = saveErrorJson(apiResultNode, uri, status);
-        return new BusinessException(exceptionResponseEnum, "API", LogMessageEnum.API_BAD_STATUS.format(status, fileName));
+        StructuredLog.warn(log, "api")
+                .addKeyValue("http.uri", uri)
+                .addKeyValue("http.status", status)
+                .addKeyValue("error.payload", truncatePayload(objectMapper.writeValueAsString(apiResultNode)))
+                .log("[API] bad status");
+
+        return new BusinessException(exceptionResponseEnum, "API", LogMessageEnum.API_BAD_STATUS.format(status));
     }
 
-    private String saveErrorJson(JsonNode apiResultNode, String uri, int status) {
-        String now = DateTimeUtils.fromLocalDateTime(LocalDateTime.now());
-
-        // 원본 노드를 변조하지 않도록 새 ObjectNode에 필드를 복사
-        ObjectNode objectNode = objectMapper.createObjectNode();
-        objectNode.setAll((ObjectNode) apiResultNode);
-        objectNode.put("dateTime", now);
-        objectNode.put("uri", uri);
-        objectNode.put("status", status);
-
-        String fileName = status + "_" + now;
-        jsonFileService.saveJsonFile(objectNode.asString(), errorLogPath + fileName);
-
-        return fileName;
+    /**
+     * CloudWatch 는 이벤트 하나의 크기에 상한이 있고 수집량이 곧 비용이라, 응답 본문을 잘라서 싣는다.
+     * 원인 파악에는 앞부분이면 충분하다.
+     */
+    private String truncatePayload(String payload) {
+        return payload.length() <= PAYLOAD_MAX_LENGTH
+                ? payload
+                : payload.substring(0, PAYLOAD_MAX_LENGTH) + "...(truncated)";
     }
 }

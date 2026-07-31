@@ -26,8 +26,7 @@ RUN useradd --system --uid 10001 --create-home appuser
 
 COPY --from=build /workspace/build/libs/*.jar app.jar
 
-# JSON 에러 로그 경로(application.yml: path.error-log=log/json/) 대비
-RUN mkdir -p /app/log && chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /app
 
 USER appuser
 EXPOSE 8080
