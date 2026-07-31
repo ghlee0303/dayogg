@@ -25,8 +25,6 @@ public class JsonFileService {
         // json/ 디렉토리 없으면 생성
         new File(basePath + jsonDir).mkdirs();
 
-        System.out.println(filePath);
-
         objectMapper.writerWithDefaultPrettyPrinter()
                 .writeValue(new File(filePath), json);
     }
