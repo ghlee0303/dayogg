@@ -50,6 +50,15 @@ out/
 .claude
 claude
 
+### Local logs ###
+# application.yml 의 local 프로파일이 떨구는 ECS JSON (Grafana/Loki 용)
+logs/
+
+### Local observability ###
+# run-local.ps1 이 내려받는 바이너리와 Loki/Alloy/Grafana 의 로컬 상태
+observability/bin/
+observability/data/
+
 ### Local secrets ###
 .env
 application-local.yml

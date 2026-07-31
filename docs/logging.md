@@ -177,17 +177,72 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 | `addKeyValue("error.type", ...)` + `setCause(e)` | 인코더가 만드는 `error` 객체와 이름이 충돌해 **그 로그 이벤트가 통째로 버려집니다** (`IllegalStateException: The name 'error' has already been written`). 스택트레이스가 필요하면 `setCause` 만 씁니다 |
 | `System.out.println` | 평문 줄이 섞여 "1줄 = 1이벤트" 전제가 깨집니다 |
 
-## 조회
+## 조회 — 로컬 (Grafana + Loki)
 
-현재 로그는 stdout 까지만 나갑니다. 컨테이너 로그를 그대로 파싱하면 됩니다.
+JSON 을 눈으로 훑는 대신 **필드로 펼쳐 보고 조건 질의**를 하려고 로컬에만 관측 스택을 둡니다.
+**배포에는 적용하지 않습니다** — 전부 로컬에서만 도는 별도 프로세스이고,
+`logs/app.json` 도 `local` 프로파일에서만 생깁니다. 운영 조회는 CloudWatch 로 갑니다(맨 아래).
+
+설정은 `observability/` 에 있습니다.
+
+IntelliJ 로 띄우면 stdout 을 수집기가 못 긁으므로, `local` 프로파일이 같은 ECS JSON 을
+`logs/app.json` 에도 떨굽니다. Alloy 가 그 파일을 tail 해 Loki 로 보냅니다.
+
+```
+IntelliJ (local 프로파일) → logs/app.json → Alloy → Loki → Grafana
+```
+
+**띄우기**
+
+`observability/run-local.ps1` 이 바이너리 3종을 `observability/bin/` 에 받아 백그라운드로 띄웁니다.
+Docker 를 쓰지 않습니다.
+
+```powershell
+cd observability
+.\run-local.ps1 install    # 최초 1회만
+.\run-local.ps1 start      # 기동 (준비될 때까지 기다렸다가 상태 출력)
+.\run-local.ps1 status
+.\run-local.ps1 stop
+```
+
+`install` 이후로는 `observability\start-viewer.cmd` · `stop-viewer.cmd` 를 **더블클릭**해도 됩니다.
+`start-viewer.cmd` 는 기동 후 브라우저로 Grafana 까지 열어줍니다.
+
+| | 포트 | 비고 |
+|---|---|---|
+| Grafana | 3000 | 익명 접속 허용, 로그인 없음 |
+| Loki | 3100 | |
+| Alloy | 12345 | 수집기 상태 UI |
+
+그리고 IntelliJ Run Configuration 의 **Active profiles 에 `local`** 을 넣고 앱을 실행합니다.
+안 넣으면 `logs/app.json` 이 안 생겨 Grafana 가 비어 보입니다.
+
+`http://localhost:3000` → Explore → Loki. 로그 줄을 클릭하면 **Log details** 에 전 필드가 펼쳐집니다.
+
+```logql
+{job="statistics"} | json | elapsedMs > 1000
+{job="statistics"} | json | code = "A1B2C3"
+{job="statistics"} | json | layer = "service" | line_format "{{.method}} {{.elapsedMs}}ms"
+```
+
+> **중첩 필드는 `_` 로 평탄화됩니다.** 위 [이벤트 필드](#이벤트-필드) 절에서 설명한 `http.uri` → `{"http":{"uri":...}}` 는
+> LogQL 에서 `http.uri` 가 아니라 **`http_uri`** 로 접근해야 합니다 (`log.level` → `log_level`).
+> 최상위 필드(`code`·`elapsedMs`·`playerId`)는 이름 그대로입니다.
+
+## 조회 — 그 외
+
+Grafana 를 안 띄웠거나 한 줄만 확인하면 될 때.
+
+```powershell
+Get-Content logs/app.json -Tail 1 | ConvertFrom-Json
+```
+
+운영 서버는 컨테이너로 도니 stdout 을 그대로 파싱하면 됩니다.
 
 ```bash
 docker logs app | jq 'select(.playerId==123)'
 docker logs app | jq 'select((.elapsedMs//0) > 1000) | {code, method, elapsedMs}'
 ```
 
-```powershell
-Get-Content log.txt -Tail 1 | ConvertFrom-Json
-```
-
-CloudWatch Logs 연동은 아직 적용 전입니다 — [CloudWatch 남은 작업](../claude/docs/cloudwatch-open-items.md) 참고.
+운영 조회는 CloudWatch Logs Insights 로 갑니다 — 아직 적용 전입니다.
+[CloudWatch 남은 작업](../claude/docs/cloudwatch-open-items.md) 참고.

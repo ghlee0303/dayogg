@@ -1,0 +1,40 @@
+# Loki 단일 바이너리 설정.
+# 경로는 run-local.ps1 이 observability/ 를 작업 디렉터리로 잡는 것을 전제로 한 상대 경로다.
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  # 로컬 뷰어라 Loki 자체 로그는 조용히
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: ./data/loki
+  storage:
+    filesystem:
+      chunks_directory: ./data/loki/chunks
+      rules_directory: ./data/loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  # Explore 의 로그량 그래프
+  volume_enabled: true
+
+# 사용 통계 전송 끔
+analytics:
+  reporting_enabled: false
