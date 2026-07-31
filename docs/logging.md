@@ -36,7 +36,7 @@ logging:
 
 ```mermaid
 flowchart LR
-    MDC["MDC<br/>code · idempotentKey"] --> Enc
+    MDC["MDC<br/>code · jobId · idempotentKey"] --> Enc
     LC["LogContext<br/>(ThreadLocal 누적)"] -->|"PARENT flush<br/>drainMap()"| KV
     SL["StructuredLog<br/>addKeyValue"] --> KV["로그 이벤트 key-value"]
     KV --> Enc["ECS 인코더"]
@@ -105,27 +105,34 @@ StructuredLog.error(log, "redis", e)         // error.type · error.message 자�
 
 ### 3. 요청 전체에 붙일 축 — MDC
 
-여러 이벤트에 걸쳐 따라붙어야 하는 값만 넣습니다. 현재 `code` 와 `idempotentKey` 둘뿐입니다.
+여러 이벤트에 걸쳐 따라붙어야 하는 값만 넣습니다. 현재 `code` · `jobId` · `idempotentKey` 셋뿐입니다.
 
 ```java
-MDC.put("code", generateCode());   // ControllerLoggingAspect
+MDC.put("code", TraceCode.generate());   // ControllerLoggingAspect
 ```
 
 **정리는 직접 하지 않습니다.** `ControllerLoggingAspect` 가 진입 시점 스냅샷을 잡아
 요청 종료 시 `setContextMap` 으로 일괄 복원합니다.
 중간에서 `MDC.clear()` 를 부르면 상위의 `code` 까지 지워집니다.
 
-## 추적 축 — `code` 와 `idempotentKey`
+## 추적 축 — `code` 와 `jobId`
 
 SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` 때문에 **요청 N 개가 잡 1 개를 공유**합니다.
-특정 요청의 `code` 를 잡에 붙이면 오해를 부르므로 축을 둘로 나눕니다.
+특정 요청의 `code` 를 잡에 붙이면 합류한 나머지 요청들이 자기 `code` 로 잡 로그를 찾지 못하므로,
+요청 축과 잡 축을 나눕니다.
 
 | 축 | 범위 | 부여 지점 |
 |---|---|---|
 | `code` | 요청 하나 (6자리 영숫자) | `ControllerLoggingAspect` |
-| `idempotentKey` | 잡 하나 | `SseJobDispatcher` |
+| `jobId` | **잡 실행 1회** (6자리 영숫자) | `SseJobDispatcher` |
+| `idempotentKey` | 잡의 대상 (그룹핑용) | `SseJobDispatcher` |
 
-컨트롤러 로그에만 **둘 다** 찍히므로, 조회는 `code` → `idempotentKey` → 잡 로그 순의 2단으로 합니다.
+컨트롤러 로그에 **셋 다** 찍히므로 조회는 `code` → `jobId` → 잡 로그의 1단입니다.
+합류한 요청도 진행 중인 잡의 `jobId` 를 그대로 받으므로, 어느 요청에서 출발하든 같은 잡에 도달합니다.
+
+> **`idempotentKey` 로 잡을 특정하면 안 됩니다.** 키는 `"player-info:" + name` 이라
+> 잡이 끝나면 삭제됐다가 다음 요청 때 같은 값으로 다시 만들어집니다. 필터하면 **서로 다른 실행이 섞입니다.**
+> 실행을 특정하는 건 `jobId` 뿐입니다. `idempotentKey` 는 "무엇에 대한 잡인가"를 볼 때만 씁니다.
 
 ## 이벤트 필드
 
@@ -133,7 +140,7 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 |---|---|
 | `@timestamp` · `log.level` · `log.logger` · `message` | 인코더 기본 |
 | `service.name` · `process.*` · `ecs.version` | 인코더 기본 |
-| `code` · `idempotentKey` | MDC |
+| `code` · `jobId` · `idempotentKey` | MDC |
 | `layer` | `controller` / `service` / `sse` / `api` / `redis` / `exception` |
 | `method` · `elapsedMs` | `@ServiceLogging` |
 | `http.method` · `http.uri` · `client.ip` · `tag` | `@ControllerLogging` |
@@ -147,22 +154,23 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 `GET /player/sse/refresh?playerId=123` 한 번에 세 줄이 나옵니다 (가독성을 위해 기본 필드는 생략).
 
 ```json
-{"message":"[GET /player/sse/refresh] done","code":"A1B2C3","idempotentKey":"player-refresh:123",
+{"message":"[GET /player/sse/refresh] done","code":"A1B2C3","jobId":"X9Y8Z7",
+ "idempotentKey":"player-refresh:123",
  "layer":"controller","http":{"method":"GET","uri":"/player/sse/refresh"},
  "client":{"ip":"1.2.3.4"},"tag":"player-refresh","elapsedMs":12}
 
-{"message":"[refresh] done","idempotentKey":"player-refresh:123","layer":"service",
+{"message":"[refresh] done","jobId":"X9Y8Z7","idempotentKey":"player-refresh:123","layer":"service",
  "method":"refresh","elapsedMs":2015,"playerId":123,
  "apiMillis":1720,"apiCount":3,"fetchNewBattleResult":1840,"resolveTier":0}
 
-{"message":"[SSE-SEND] sent","idempotentKey":"player-refresh:123","layer":"sse",
+{"message":"[SSE-SEND] sent","jobId":"X9Y8Z7","idempotentKey":"player-refresh:123","layer":"sse",
  "sseKey":"7f3c...","event":"message","dataType":"SseJobResult"}
 ```
 
 컨트롤러는 SSE 잡을 던지고 바로 반환하므로 `elapsedMs` 가 짧습니다.
 `refresh` 는 PARENT 하나뿐이라 하위 CHILD 의 소요 시간(`fetchNewBattleResult`)과
 `ApiService` 가 누적한 값(`apiMillis`·`apiCount`)이 **한 줄로 합쳐집니다.**
-잡 로그에 `code` 가 없는 것은 의도된 설계입니다.
+잡 로그에 `code` 가 없는 것은 의도된 설계입니다 — 대신 `jobId` 로 이어집니다.
 
 > 같은 CHILD 를 여러 번 호출하면 키가 덮어써져 **마지막 값만** 남습니다
 > (`resolveTier` 는 게임 수만큼 호출되지만 1회분만 찍힙니다).

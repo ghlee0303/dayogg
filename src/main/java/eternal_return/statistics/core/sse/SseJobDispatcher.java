@@ -1,5 +1,6 @@
 package eternal_return.statistics.core.sse;
 
+import eternal_return.statistics.common.log.TraceCode;
 import eternal_return.statistics.core.exception.BusinessException;
 import eternal_return.statistics.core.exception.ErrorResponse;
 import eternal_return.statistics.core.exception.enums.ExceptionResponseEnum;
@@ -37,15 +38,18 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class SseJobDispatcher {
 
-    /** 잡 단위 추적 축. 요청의 {@code code} 는 잡 쓰레드까지 1:1로 이어지지 않는다. */
+    /** 잡의 대상을 나타내는 그룹핑 축. 잡이 끝나면 삭제됐다 재생성되므로 실행마다 유일하지는 않다. */
     private static final String JOB_KEY = "idempotentKey";
+
+    /** 잡 실행 1회를 가리키는 추적 축. 요청의 {@code code} 는 잡 쓰레드까지 1:1로 이어지지 않는다. */
+    private static final String JOB_ID = "jobId";
 
     private final IdempotentService idempotentService;
     private final SseService sseService;
     private final ThreadExecutor threadExecutor;
 
     public <T> SseEmitter controllerJobStart(String idempotentKey, Supplier<T> task) {
-        // 요청 로그에 잡의 식별자를 남긴다. 요청 로그의 code → idempotentKey → 잡 로그 순으로 추적한다.
+        // 요청 로그에 잡의 대상을 남긴다. 실행 단위 추적은 아래에서 확정되는 jobId 가 맡는다.
         // (MDC 정리는 ControllerLoggingAspect 가 요청 종료 시 일괄 복원한다)
         MDC.put(JOB_KEY, idempotentKey);
 
@@ -54,9 +58,11 @@ public class SseJobDispatcher {
 
         // 이미 진행 중인 동일 작업이 있으면 현재 sseKey만 합류시키고 조기 반환.
         // 없으면 idempotent를 생성하고 아래에서 작업을 제출한다. (조회+생성은 단일 락 구간에서 원자적으로 수행)
-        boolean joined;
+        // 반환값은 이 요청이 붙은 잡의 jobId — 합류했다면 진행 중인 잡의 것이라 newJobId 와 달라진다.
+        String newJobId = TraceCode.generate();
+        String jobId;
         try {
-            joined = idempotentService.joinOrCreate(idempotentKey, sseKey);
+            jobId = idempotentService.joinOrCreate(idempotentKey, sseKey, newJobId);
 
         } catch (RuntimeException e) {
             // 락 획득 실패 등으로 등록에 실패한 경우 emitter를 정리한다.
@@ -68,13 +74,16 @@ public class SseJobDispatcher {
             throw e;
         }
 
-        if (joined) {
+        // 합류든 생성이든 요청 로그에 남긴다. 이 요청이 어느 잡에 붙었는지가 code 와 함께 드러난다.
+        MDC.put(JOB_ID, jobId);
+
+        if (!newJobId.equals(jobId)) {
             return sseEmitter;
         }
 
         try {
             // 가상 쓰레드에 작업 제출 — 논블로킹으로 즉시 반환
-            threadExecutor.submit(() -> serviceThreadJobStart(idempotentKey, sseKey, task));
+            threadExecutor.submit(() -> serviceThreadJobStart(idempotentKey, jobId, sseKey, task));
 
         } catch (ThreadTimeoutException e) {
             // submit 실패 시 정리 — task가 실행되지 않으므로 여기서 처리.
@@ -108,20 +117,23 @@ public class SseJobDispatcher {
      * 락 구간 안에서 이루어진다.
      *
      * @param idempotentKey Redis 멱등 키
+     * @param jobId         이 실행의 추적 축
      * @param sseKey        최초 요청자의 sseKey — idempotent 조회 실패 시 폴백 대상
      * @param task          실행할 비즈니스 로직
      * @param <T>           작업 결과 타입
      */
     private <T> void serviceThreadJobStart(
             String idempotentKey,
+            String jobId,
             String sseKey,
             Supplier<T> task
     ) {
         // 요청 쪽 MDC(code 등)가 가상 쓰레드로 상속돼 따라올 수 있다.
         // 요청 N개가 잡 1개를 공유하므로(joinOrCreate) 특정 요청의 code 를 잡에 붙이면 오해를 부른다.
-        // 잡의 추적 축은 idempotentKey 하나로 세운다.
+        // 잡의 추적 축은 jobId 로 세우고, idempotentKey 는 대상을 나타내는 그룹핑 축으로만 남긴다.
         MDC.clear();
         MDC.put(JOB_KEY, idempotentKey);
+        MDC.put(JOB_ID, jobId);
 
         try {
             T result = task.get();

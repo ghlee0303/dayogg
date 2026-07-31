@@ -39,23 +39,25 @@ public class IdempotentService {
      * 동시 요청이 모두 "작업 없음"으로 판단하고 각자 Idempotent를 생성(= 서로 덮어쓰기)하면서
      * 중복 실행되고 먼저 등록된 sseKey가 유실된다.
      *
-     * @return 이미 진행 중인 작업에 합류했으면 true, 최초 요청이라 새로 생성했으면 false
+     * @param newJobId 새로 생성할 경우 부여할 jobId. 합류하면 쓰이지 않는다.
+     * @return 이 요청이 붙은 작업의 jobId — 새로 만들었으면 {@code newJobId}, 합류했으면 진행 중인 작업의 것.
+     *         호출부는 둘을 비교해 합류 여부를 판단한다.
      */
     @DistributedLock(value = "#key")
-    public boolean joinOrCreate(String key, String sseKey) {
+    public String joinOrCreate(String key, String sseKey, String newJobId) {
         Idempotent idempotent = idempotentRedisRepository.getIdempotent(key);
 
         if (idempotent == null) {
             idempotentRedisRepository.saveIdempotent(
-                    Idempotent.create(key, sseKey), Duration.ofMinutes(sseTimeoutMinutes));
+                    Idempotent.create(key, newJobId, sseKey), Duration.ofMinutes(sseTimeoutMinutes));
 
-            return false;
+            return newJobId;
         }
 
         idempotent.addSseKey(sseKey);
         idempotentRedisRepository.saveIdempotent(idempotent, Duration.ofMinutes(sseTimeoutMinutes));
 
-        return true;
+        return idempotent.jobId();
     }
 
     @DistributedLock(value = "#key")
