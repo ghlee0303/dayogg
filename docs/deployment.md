@@ -163,12 +163,24 @@ dayogg restart     # 재시작
 dayogg up          # 정리(clean) 후 새 이미지 pull + 재기동 (수동 배포, 디스크 자동 확보)
 dayogg down        # 내리기 (DB 볼륨은 유지)
 dayogg clean       # 디스크 정리만 (안 쓰는 이미지/빌드캐시/정지 컨테이너, 볼륨은 유지)
+dayogg db-reset    # ⚠️ DB 전체 행 + Redis 캐시 삭제 (되돌릴 수 없음)
 dayogg help        # 도움말
 ```
 
 - 항상 `~/dayogg`의 `docker-compose.prod.yml` 대상. 경로가 다르면 `DAYOGG_DIR` / `DAYOGG_FILE` 환경변수로 변경.
 - 실수로 DB 볼륨 날리는 걸 막으려고 `down -v` 는 스크립트에서 막아둠 (데이터 삭제는 수동으로만).
 - `dayogg up` 은 pull **전에** 자동으로 정리하므로 평소엔 `up` 만 쳐도 디스크가 확보됨. `clean` 은 배포 없이 정리만 하고 싶을 때 쓰면 됨. 어느 쪽도 볼륨(DB)은 안 건드림.
+
+**`dayogg db-reset` — 데이터 초기화 (⚠️ 되돌릴 수 없음)**
+
+`.env` 의 `DB_HOST`/`DB_PASSWORD` 로 RDS 에 붙어 **모든 테이블의 행**을 지우고 Redis 도 비운다.
+app 정지 → TRUNCATE → `FLUSHALL` → 재기동까지 한 번에 한다. 실행 전 `RESET` 입력을 요구한다.
+
+- 테이블 목록은 하드코딩하지 않고 `information_schema` 에서 읽으므로 엔티티가 늘어도 그대로 동작한다.
+- `DROP` 이 아니라 `TRUNCATE` 다. 운영은 `JPA_DDL_AUTO=validate` 라 테이블이 사라지면 앱이 기동하지 못한다.
+- Redis 를 같이 비우는 이유 — 안 그러면 DB 는 비었는데 옛 통계·티어컷이 캐시에서 계속 조회된다.
+- 스키마 자체를 새로 만들어야 하면 `.env` 에 `JPA_DDL_AUTO=update` 를 **1회만** 넣고 기동한 뒤 반드시 제거.
+- 백업이 필요하면 먼저 `mysqldump` 를 직접 뜰 것. 이 명령은 백업하지 않는다.
 
 ### 자주 막히는 것
 
