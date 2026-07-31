@@ -33,6 +33,9 @@ services:
         # 대가: 버퍼를 넘긴 로그는 조용히 버려진다.
         mode: non-blocking
         max-buffer-size: 4m
+        # dual logging(도커 20.10+ 기본)은 읽기용 사본을 로컬 디스크에 또 쌓는다.
+        # EC2 디스크가 빠듯해 끈다. 대가로 dayogg logs 에 app 로그가 안 나온다 → CloudWatch 로 조회.
+        cache-disabled: "true"
 
   # Redis 는 EC2 에 그대로 유지 (단일 인스턴스 + 캐시/분산락 용도라 외부화 불필요)
   redis:
@@ -48,6 +51,12 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
+    # json-file 기본값은 크기 상한이 없어 무한정 쌓인다. 총 30MB 로 묶는다.
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
 volumes:
   redis-data:

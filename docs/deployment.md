@@ -85,7 +85,7 @@ git push               # ← 이 순간 배포 시작됨
 cd ~/dayogg
 
 docker compose -f docker-compose.prod.yml ps          # 컨테이너 상태
-docker compose -f docker-compose.prod.yml logs -f app # 앱 로그 (로컬 캐시. 정본은 CloudWatch — 아래 참고)
+docker compose -f docker-compose.prod.yml logs -f app # ⚠ 안 나옴. 앱 로그는 CloudWatch — 아래 참고
 docker compose -f docker-compose.prod.yml logs redis  # Redis 로그 (MySQL 은 RDS 라 여기 없음)
 
 # 수동으로 다시 받아 재기동
@@ -124,14 +124,14 @@ fields @timestamp, method, `error.message`
 
 - **보존기간 14일.** 새 로그 그룹의 기본값은 무기한이라 영원히 과금된다. 그룹을 새로 만들면
   즉시 Actions → Edit retention setting 에서 걸 것.
-- **`dayogg logs` 는 계속 된다.** awslogs 는 읽기를 지원하지 않지만 도커의 dual logging 이
-  로컬 파일 캐시를 따로 유지하기 때문. 다만 그건 캐시라 크기 제한에 걸리면 잘린다.
-  **정본은 CloudWatch**, `dayogg logs` 는 급할 때 훑는 용도로만.
-- 그래서 app 로그는 여전히 EC2 디스크도 먹는다. 캐시 크기는 `daemon.json` 의
-  `cache-max-size` / `cache-max-file` 로 제한하거나 `cache-disabled` 로 끈다.
+- **`dayogg logs` 로 app 로그는 못 본다.** awslogs 는 읽기를 지원하지 않는다.
+  도커 20.10+ 의 dual logging 이 읽기용 로컬 사본을 남겨주긴 하는데, EC2 디스크가
+  빠듯해 `cache-disabled: "true"` 로 껐다. **app 로그 조회 창구는 CloudWatch 하나뿐이다.**
+- `dayogg logs redis` 는 그대로 된다 (redis 는 `json-file` 유지).
 - `mode: non-blocking` 이라 버퍼(4m)를 넘긴 로그는 **조용히 버려진다.** 전송이 밀려도
   앱이 안 느려지는 대가.
-- `redis` 는 그대로 `json-file` 이라 `dayogg logs redis` 는 원래대로 동작한다.
+- `redis` 로그는 `json-file` 에 `max-size: 10m` / `max-file: "3"` 을 걸어 총 30MB 로 묶었다.
+  기본값에는 크기 상한이 없어 무한정 쌓인다.
 - 되돌리려면 compose 의 `logging` 블록만 지우고 재배포. 즉시 원복된다.
 
 ### `dayogg` 관리 스크립트 (추천)
@@ -156,7 +156,7 @@ sed -i 's/\r$//' /usr/local/bin/dayogg            # 혹시 CRLF면 정리
 ```bash
 dayogg status      # 컨테이너 상태 (인자 없으면 status)
 dayogg stats       # CPU/메모리 사용량
-dayogg logs        # 앱 로그 (로컬 캐시. 정본은 CloudWatch. dayogg logs redis → Redis 로그)
+dayogg logs        # ⚠ app 은 안 나옴 (CloudWatch 로 조회). dayogg logs redis → Redis 로그
 dayogg start       # 정지된 컨테이너 재개
 dayogg stop        # 정지 (컨테이너 유지)
 dayogg restart     # 재시작
