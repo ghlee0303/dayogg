@@ -85,7 +85,7 @@ git push               # ← 이 순간 배포 시작됨
 cd ~/dayogg
 
 docker compose -f docker-compose.prod.yml ps          # 컨테이너 상태
-docker compose -f docker-compose.prod.yml logs -f app # 앱 로그 실시간
+docker compose -f docker-compose.prod.yml logs -f app # 앱 로그 (로컬 캐시. 정본은 CloudWatch — 아래 참고)
 docker compose -f docker-compose.prod.yml logs redis  # Redis 로그 (MySQL 은 RDS 라 여기 없음)
 
 # 수동으로 다시 받아 재기동
@@ -96,6 +96,43 @@ docker compose -f docker-compose.prod.yml up -d
 docker compose -f docker-compose.prod.yml restart
 docker compose -f docker-compose.prod.yml down        # 볼륨은 유지됨
 ```
+
+### 앱 로그 조회는 CloudWatch
+
+`app` 컨테이너는 `awslogs` 드라이버를 쓴다 (`docker-compose.prod.yml` 의 `logging` 블록).
+stdout 이 ECS JSON 한 줄씩 나가고, 그대로 CloudWatch 로 올라가 **필드 단위 질의**가 된다.
+
+```
+CloudWatch → Log Management → /dayogg/app        (리전 ap-northeast-2)
+CloudWatch → Log analytics                       (Logs Insights, 질의)
+```
+
+```sql
+-- 느린 호출
+fields @timestamp, method, elapsedMs
+| filter elapsedMs > 1000
+| sort elapsedMs desc
+
+-- 에러
+fields @timestamp, method, `error.message`
+| filter `log.level` = "ERROR"
+```
+
+점(`.`) 든 필드는 백틱으로 감싼다. `code`·`elapsedMs`·`playerId` 는 그냥 쓴다.
+
+알아둘 것:
+
+- **보존기간 14일.** 새 로그 그룹의 기본값은 무기한이라 영원히 과금된다. 그룹을 새로 만들면
+  즉시 Actions → Edit retention setting 에서 걸 것.
+- **`dayogg logs` 는 계속 된다.** awslogs 는 읽기를 지원하지 않지만 도커의 dual logging 이
+  로컬 파일 캐시를 따로 유지하기 때문. 다만 그건 캐시라 크기 제한에 걸리면 잘린다.
+  **정본은 CloudWatch**, `dayogg logs` 는 급할 때 훑는 용도로만.
+- 그래서 app 로그는 여전히 EC2 디스크도 먹는다. 캐시 크기는 `daemon.json` 의
+  `cache-max-size` / `cache-max-file` 로 제한하거나 `cache-disabled` 로 끈다.
+- `mode: non-blocking` 이라 버퍼(4m)를 넘긴 로그는 **조용히 버려진다.** 전송이 밀려도
+  앱이 안 느려지는 대가.
+- `redis` 는 그대로 `json-file` 이라 `dayogg logs redis` 는 원래대로 동작한다.
+- 되돌리려면 compose 의 `logging` 블록만 지우고 재배포. 즉시 원복된다.
 
 ### `dayogg` 관리 스크립트 (추천)
 
@@ -119,7 +156,7 @@ sed -i 's/\r$//' /usr/local/bin/dayogg            # 혹시 CRLF면 정리
 ```bash
 dayogg status      # 컨테이너 상태 (인자 없으면 status)
 dayogg stats       # CPU/메모리 사용량
-dayogg logs        # 앱 로그 실시간 (dayogg logs redis → Redis 로그. MySQL 은 RDS)
+dayogg logs        # 앱 로그 (로컬 캐시. 정본은 CloudWatch. dayogg logs redis → Redis 로그)
 dayogg start       # 정지된 컨테이너 재개
 dayogg stop        # 정지 (컨테이너 유지)
 dayogg restart     # 재시작
