@@ -31,6 +31,11 @@ RUN chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8080
 
+# 코드가 쓰는 LocalDateTime.now() 는 JVM 기본 시간대를 따른다. 베이스 이미지 기본값이 UTC 라
+# 고정하지 않으면 컨테이너에서만 9시간 어긋난 값이 저장되고 그대로 응답에 실린다.
+# DB 접속 URL 의 serverTimezone=Asia/Seoul 과도 여기서 비로소 일치한다.
+ENV TZ=Asia/Seoul
+
 # 컨테이너 메모리에 맞춰 힙 자동 조정
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
 
