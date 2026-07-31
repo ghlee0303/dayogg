@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -25,8 +24,8 @@ public class TierController {
     @GetMapping("/range")
     @ControllerLogging
     public ResponseEntity<Map<TierEnum, TierRangeInfo>> getTierRange(
-            @RequestParam @Nullable Integer seasonId,
-            @RequestParam @Nullable LocalDateTime dateTime
+            @RequestParam(required = false) Integer seasonId,
+            @RequestParam(required = false) LocalDateTime dateTime
     ) {
         Integer targetSeasonId = seasonId == null ? seasonMeta.getNowSeason().seasonId() : seasonId;
 

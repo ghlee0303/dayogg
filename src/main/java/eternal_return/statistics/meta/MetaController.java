@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
@@ -73,7 +72,7 @@ public class MetaController {
     @GetMapping("/tier_range")
     @ControllerLogging
     public ResponseEntity<Map<TierEnum, TierRangeInfo>> getTierRange(
-            @RequestParam @Nullable Integer seasonId
+            @RequestParam(required = false) Integer seasonId
     ) {
         return ResponseEntity.ok(
                 tierRangeMeta.getBySeasonId(seasonId == null ? seasonMeta.getNowSeason().seasonId() : seasonId)
