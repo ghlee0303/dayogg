@@ -23,6 +23,16 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-northeast-2
+        awslogs-group: /dayogg/app
+        awslogs-create-group: "true"
+        # 기본값이 blocking 이라 전송이 밀리면 앱까지 느려진다. 반드시 끈다.
+        # 대가: 버퍼를 넘긴 로그는 조용히 버려진다.
+        mode: non-blocking
+        max-buffer-size: 4m
 
   # Redis 는 EC2 에 그대로 유지 (단일 인스턴스 + 캐시/분산락 용도라 외부화 불필요)
   redis:
