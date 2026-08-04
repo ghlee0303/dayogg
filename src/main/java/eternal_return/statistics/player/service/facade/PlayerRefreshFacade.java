@@ -28,13 +28,11 @@ public class PlayerRefreshFacade {
         PlayerDto playerDto = playerService.getPlayerDto(playerId);
         BattleResultApiResult apiResult = battleResultService.fetchNewBattleResult(playerDto);
 
-        if (apiResult.isPresent()) {
-            transactionTemplate.executeWithoutResult(status -> {
-                battleResultService.saveBattleResult(playerDto.id(), apiResult.getResponseList());
-                playerService.updateAfterRefresh(playerDto.id(), apiResult.getPlayerLevel());
-                playerService.fetchPlayerSeason(playerDto.id(), apiResult.getSeasonIdList());
-            });
-        }
+        transactionTemplate.executeWithoutResult(status -> {
+            playerService.updateLevel(playerDto.id(), apiResult.getPlayerLevel());
+            playerService.fetchPlayerSeason(playerDto.id(), apiResult.getSeasonIdList());
+            battleResultService.saveBattleResult(playerDto.id(), apiResult.getResponseList());
+        });
 
         return new SseJobResult(playerDto.id().toString());
     }
