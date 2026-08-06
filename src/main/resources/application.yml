@@ -4,6 +4,10 @@ spring:
   main:
     # 배너는 로깅 시스템을 안 거쳐 평문으로 나온다 → "1줄 = 1 JSON 이벤트" 전제가 깨지므로 끈다.
     banner-mode: "off"
+    # 기동 3줄("Starting…"·"No active profile set"·"Started … in Xs")은 전부 이 플래그가 낸다.
+    # 로거 이름이 StatisticsApplication 이라 root: warn 에 안 걸리므로 여기서 끈다.
+    # 재시작 신호는 StartupLogger 가 구조화 1줄로 대신 남긴다.
+    log-startup-info: false
   datasource:
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/eternal_return?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -49,6 +53,14 @@ logging:
   structured:
     format:
       console: ecs
+    # 값이 사실상 상수인 블록은 인코더 단계에서 뺀다 — 수집량이 곧 CloudWatch 비용이다.
+    # service.name: 로그 그룹이 이 앱 전용이라 중복 / process.pid: 컨테이너라 항상 동일
+    # process.thread.name: 스레드 추적은 code·jobId 축이 대신한다 / ecs.version: "8.11" 고정
+    json:
+      exclude:
+        - service
+        - process
+        - ecs
   level:
     # 수집량이 곧 CloudWatch 비용이다. 프레임워크 로그는 warn 이상만 내보낸다.
     root: warn
