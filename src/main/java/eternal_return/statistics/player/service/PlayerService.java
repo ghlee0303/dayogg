@@ -29,7 +29,7 @@ public class PlayerService {
     private final TierService tierService;
 
     @Transactional
-    public void updateAfterRefresh(Long playerId, Integer level) {
+    public void updateLevel(Long playerId, Integer level) {
         Player player = playerDslRepository.getActive(playerId);
 
         player.updateLevel(level);

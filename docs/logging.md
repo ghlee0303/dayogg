@@ -18,16 +18,44 @@ Spring Boot 내장 구조화 로깅(3.4+)을 씁니다. 추가 의존성은 없�
 spring:
   main:
     banner-mode: "off"        # 배너는 로깅 시스템을 안 거쳐 평문으로 나온다
+    log-startup-info: false   # Spring 기동 3줄 — 아래 "기동 로그" 참고
 logging:
   structured:
     format:
       console: ecs            # Elastic Common Schema
+    json:
+      exclude:                # 값이 상수인 블록은 인코더 단계에서 뺀다
+        - service
+        - process
+        - ecs
   level:
     root: warn                # 프레임워크 로그는 warn 이상만
     eternal_return.statistics: info
 ```
 
 `root: warn` 이므로 **본인 패키지 밖 로그는 INFO 가 나오지 않습니다.** 남겼는데 안 보이면 레벨부터 확인합니다.
+
+`exclude` 는 인코더가 모든 이벤트에 붙이는 `service`·`process`·`ecs` 블록을 지웁니다.
+`service.name` 은 로그 그룹이 이 앱 전용이라 중복이고, `process.pid` 는 컨테이너라 항상 같은 값,
+`ecs.version` 은 `"8.11"` 고정입니다. 이벤트당 약 130바이트로 **수집량이 곧 CloudWatch 비용**입니다.
+스레드 추적은 `process.thread.name` 대신 [`code`·`jobId` 축](#추적-축--code-와-jobid)이 대신합니다.
+
+## 기동 로그
+
+Spring 기본 기동 3줄(`Starting …` · `No active profile set …` · `Started … in Xs`)은 **끕니다.**
+로거 이름이 `eternal_return.statistics.StatisticsApplication` 이라 `root: warn` 에 걸리지 않고,
+값이 message 안에 박힌 평문이라 질의도 안 됩니다. 셋은 `logStartupInfo` 플래그 하나로 묶여 있어 개별 분리가 안 됩니다.
+
+대신 `StartupLogger` 가 `ApplicationReadyEvent` 에서 한 줄만 남깁니다 —
+**CloudWatch 에서 이 줄이 곧 배포·재기동 시점입니다.**
+
+```json
+{"message":"[STARTUP] ready","layer":"lifecycle","startupMs":5863,
+ "profile":"default","version":"0.0.1-SNAPSHOT"}
+```
+
+`version` 은 매 이벤트에서 뺀 `service.version` 을 여기 한 줄에만 싣는 것입니다 — 어느 빌드가 도는지는 알아야 합니다.
+jar 매니페스트에서 읽으므로 IDE 로 띄우면 `unknown` 입니다.
 
 ## 값이 필드가 되는 세 가지 통로
 
@@ -139,15 +167,16 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 | 필드 | 출처 |
 |---|---|
 | `@timestamp` · `log.level` · `log.logger` · `message` | 인코더 기본 |
-| `service.name` · `process.*` · `ecs.version` | 인코더 기본 |
 | `code` · `jobId` · `idempotentKey` | MDC |
-| `layer` | `controller` / `service` / `sse` / `api` / `redis` / `exception` |
+| `layer` | `controller` / `service` / `sse` / `api` / `redis` / `exception` / `lifecycle` |
 | `method` · `elapsedMs` | `@ServiceLogging` |
 | `http.method` · `http.uri` · `client.ip` · `tag` | `@ControllerLogging` |
 | `error.type` · `error.message` | 실패 경로 |
 | 그 외 | `LogContext` · `addKeyValue` 로 넣은 도메인 값 |
 
 점(`.`)이 든 필드는 JSON 에서 **중첩 객체**가 됩니다 — `http.uri` → `{"http":{"uri":...}}`.
+
+인코더가 기본으로 붙이는 `service` · `process` · `ecs` 블록은 [설정](#설정)의 `json.exclude` 로 빠져 **나오지 않습니다.**
 
 ## 실제 출력
 

@@ -35,12 +35,12 @@ public class BattleResultApiService {
             for (BattleResultApiResponse dto : battleResultJsonMapper.battleResultApiDtoList(json)) {
                 SeasonInfo targetSeason = seasonMeta.getByDateTimeRange(dto.getStartDtm());
 
+                result.updatePlayerInfo(dto);
+
                 // 이미 저장된 게임에 도달하면 수집 종료
                 if (dto.getGameId().equals(lastBattleResultId)) return result;
                 // 현재 시즌 이외 게임에 도달하면 수집 종료
                 if (!targetSeason.isCurrent()) return result;
-
-                result.updatePlayerInfo(dto);
 
                 // 랭크 모드 외 스킵
                 if (!dto.getMatchingMode().isRank()) continue;
