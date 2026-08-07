@@ -24,6 +24,9 @@ spring:
       enabled: true
 
   jpa:
+    # 기본값 true 는 요청이 끝날 때까지 커넥션을 붙들고, 명시하지 않으면 기동마다 WARN 1줄이 나간다.
+    # 응답은 전부 DTO 라 뷰에서 지연 로딩이 필요 없고, SSE 잡은 가상 스레드라 애초에 무관하다.
+    open-in-view: false
     hibernate:
       # 기본은 로컬/테스트용 create(빈 DB에 스키마 자동 생성).
       # 운영(RDS)은 compose 에서 JPA_DDL_AUTO=validate 로 덮어써 데이터 보존 + 스키마 불일치 시 기동 실패.
@@ -67,6 +70,12 @@ logging:
     eternal_return.statistics: info
     org.hibernate.SQL: off
     org.hibernate.orm.jdbc.bind: off
+    # 4xx 는 클라이언트가 요청을 잘못 보낸 것이지 서버 장애가 아니다. 405·파라미터 누락·깨진 JSON 마다
+    # "Resolved [...]" WARN 을 뿌리는데, 필드가 없어(code·http.uri·client.ip 부재) 질의도 안 된다.
+    # 대가: 인자 바인딩 단계에서 깨지는 4xx 는 ControllerLoggingAspect 의 @Around 가 돌기 전이라
+    # 이걸 끄면 로그가 아예 안 남는다. 프론트 오류 추적이 필요해지면 이 줄을 지우면 된다.
+    # root 는 warn 으로 둔다 — Hikari 스레드 고갈·Redis 재연결 실패 같은 장애 징후는 계속 봐야 한다.
+    org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver: off
 
 scheduler:
   tier-cut:
