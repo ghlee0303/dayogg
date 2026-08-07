@@ -8,7 +8,7 @@
 local.file_match "applog" {
 	path_targets = [{
 		__path__ = coalesce(sys.env("APP_LOG_PATH"), "../logs/app.json"),
-		job      = "statistics",
+		job      = "dayogg",
 	}]
 }
 

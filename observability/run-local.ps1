@@ -206,7 +206,7 @@ function Invoke-Status {
     Write-Host ""
     if ($allUp) {
         Write-Host "Grafana -> http://localhost:3000  (Explore -> Loki)"
-        Write-Host "질의    -> {job=`"statistics`"} | json | elapsedMs > 1000"
+        Write-Host "질의    -> {job=`"dayogg`"} | json | elapsedMs > 1000"
         Write-Host ""
         Write-Host "앱은 IntelliJ 에서 Active profiles=local 로 실행할 것. 안 그러면 $AppLog 가 안 생긴다." -ForegroundColor Yellow
     }

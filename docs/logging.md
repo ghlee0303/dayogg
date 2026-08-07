@@ -30,7 +30,7 @@ logging:
         - ecs
   level:
     root: warn                # 프레임워크 로그는 warn 이상만
-    eternal_return.statistics: info
+    eternal_return.dayogg: info
 ```
 
 `root: warn` 이므로 **본인 패키지 밖 로그는 INFO 가 나오지 않습니다.** 남겼는데 안 보이면 레벨부터 확인합니다.
@@ -43,7 +43,7 @@ logging:
 ## 기동 로그
 
 Spring 기본 기동 3줄(`Starting …` · `No active profile set …` · `Started … in Xs`)은 **끕니다.**
-로거 이름이 `eternal_return.statistics.StatisticsApplication` 이라 `root: warn` 에 걸리지 않고,
+로거 이름이 `eternal_return.dayogg.DayoGGBackApplication` 이라 `root: warn` 에 걸리지 않고,
 값이 message 안에 박힌 평문이라 질의도 안 됩니다. 셋은 `logStartupInfo` 플래그 하나로 묶여 있어 개별 분리가 안 됩니다.
 
 대신 `StartupLogger` 가 `ApplicationReadyEvent` 에서 한 줄만 남깁니다 —
@@ -258,9 +258,9 @@ cd observability
 `http://localhost:3000` → Explore → Loki. 로그 줄을 클릭하면 **Log details** 에 전 필드가 펼쳐집니다.
 
 ```logql
-{job="statistics"} | json | elapsedMs > 1000
-{job="statistics"} | json | code = "A1B2C3"
-{job="statistics"} | json | layer = "service" | line_format "{{.method}} {{.elapsedMs}}ms"
+{job="dayogg"} | json | elapsedMs > 1000
+{job="dayogg"} | json | code = "A1B2C3"
+{job="dayogg"} | json | layer = "service" | line_format "{{.method}} {{.elapsedMs}}ms"
 ```
 
 > **중첩 필드는 `_` 로 평탄화됩니다.** 위 [이벤트 필드](#이벤트-필드) 절에서 설명한 `http.uri` → `{"http":{"uri":...}}` 는

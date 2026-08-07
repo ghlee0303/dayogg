@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    image: statistics:latest
+    image: dayogg:latest
     ports:
       - "8080:8080"
     environment:

@@ -6,7 +6,7 @@ plugins {
 
 group = 'eternal_return'
 version = '0.0.1-SNAPSHOT'
-description = 'Demo project for Spring Boot'
+description = 'DayoGG_Back — Eternal Return 전적 수집·통계 API'
 
 java {
 	toolchain {

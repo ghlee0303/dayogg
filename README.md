@@ -74,8 +74,8 @@ flowchart TD
 ## 프로젝트 구조
 
 ```
-src/main/java/eternal_return/statistics/
-├── StatisticsApplication.java   # 앱 진입점
+src/main/java/eternal_return/dayogg/
+├── DayoGGBackApplication.java   # 앱 진입점
 ├── battle_result/               # 외부 API 호출 → 전투 결과 저장
 ├── statistics/                  # 전투 결과 집계 → 통계 산출
 ├── player/                      # 플레이어 프로필 및 시즌 스냅샷
