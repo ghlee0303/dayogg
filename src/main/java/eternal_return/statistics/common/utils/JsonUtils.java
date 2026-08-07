@@ -1,5 +1,7 @@
 package eternal_return.statistics.common.utils;
 
+import eternal_return.statistics.common.log.StructuredLog;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
@@ -13,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+@Slf4j
 public class JsonUtils {
 
     public static <T> T readJsonFile(ObjectMapper objectMapper, String path, TypeReference<T> typeReference) {
@@ -23,7 +26,10 @@ public class JsonUtils {
                 return objectMapper.readValue(is, typeReference);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            StructuredLog.error(log, "meta", e)
+                    .addKeyValue("operation", "readJsonFile")
+                    .addKeyValue("path", path)
+                    .log("[META] json file read failed");
             throw new RuntimeException(e.getMessage());
         }
     }
@@ -36,7 +42,10 @@ public class JsonUtils {
                 return objectMapper.readTree(is);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            StructuredLog.error(log, "meta", e)
+                    .addKeyValue("operation", "readJsonFileToNode")
+                    .addKeyValue("path", path)
+                    .log("[META] json file read failed");
             throw new RuntimeException(e.getMessage());
         }
     }

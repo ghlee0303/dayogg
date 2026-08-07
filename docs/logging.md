@@ -168,7 +168,7 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 |---|---|
 | `@timestamp` · `log.level` · `log.logger` · `message` | 인코더 기본 |
 | `code` · `jobId` · `idempotentKey` | MDC |
-| `layer` | `controller` / `service` / `sse` / `api` / `redis` / `exception` / `lifecycle` |
+| `layer` | `controller` / `service` / `sse` / `api` / `redis` / `meta` / `exception` / `lifecycle` |
 | `method` · `elapsedMs` | `@ServiceLogging` |
 | `http.method` · `http.uri` · `client.ip` · `tag` | `@ControllerLogging` |
 | `error.type` · `error.message` | 실패 경로 |
@@ -213,6 +213,7 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 | `MDC.put("elapsedMs", String.valueOf(ms))` | MDC 는 String 만 담아 `"123"` 으로 나갑니다. 문자열 비교라 `"99" > "1000"` 이 참이 되어 지연 시간 질의가 조용히 틀립니다 |
 | `addKeyValue("error.type", ...)` + `setCause(e)` | 인코더가 만드는 `error` 객체와 이름이 충돌해 **그 로그 이벤트가 통째로 버려집니다** (`IllegalStateException: The name 'error' has already been written`). 스택트레이스가 필요하면 `setCause` 만 씁니다 |
 | `System.out.println` | 평문 줄이 섞여 "1줄 = 1이벤트" 전제가 깨집니다 |
+| `e.printStackTrace()` | 로깅 시스템을 안 거치고 stderr 로 **여러 줄** 평문을 뿜습니다. 레벨 설정으로도 못 막습니다. `StructuredLog.error(log, layer, e)` 를 씁니다 |
 
 ## 조회 — 로컬 (Grafana + Loki)
 
