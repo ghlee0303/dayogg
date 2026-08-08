@@ -10,8 +10,4 @@ public class IdempotentException extends RuntimeException {
         super(message);
         this.idempotentKey = idempotentKey;
     }
-
-    public String getMessage() {
-        return super.getMessage();
-    }
 }
