@@ -22,6 +22,13 @@ AOP 기반으로 처리합니다. 메서드에 어노테이션만 붙이고 로�
 - `@ControllerLogging`
 - `@ServiceLogging`
 
+정상 경로에 남길 정보가 없는 엔드포인트(인메모리 메타 조회 등)는 `mode = LoggingMode.ON_ERROR` 를 줍니다.
+평상시엔 아무것도 남기지 않고 예외·4xx/5xx·지연일 때만 올라옵니다 — [로그 레벨 표](logging.md#컨트롤러-로그-레벨).
+
+```java
+@ControllerLogging(mode = LoggingMode.ON_ERROR)
+```
+
 ## 예외 처리
 
 `BusinessException`으로 통일합니다.

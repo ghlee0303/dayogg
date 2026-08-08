@@ -1,6 +1,7 @@
 package eternal_return.dayogg.meta;
 
 import eternal_return.dayogg.core.annotation.controller_logging.ControllerLogging;
+import eternal_return.dayogg.core.annotation.controller_logging.LoggingMode;
 import eternal_return.dayogg.meta.enums.LanguageEnum;
 import eternal_return.dayogg.meta.enums.LocaleEnum;
 import eternal_return.dayogg.meta.meta.LocaleMeta;
@@ -34,7 +35,7 @@ public class MetaController {
     private final ItemMeta itemMeta;
 
     @GetMapping("/equip")
-    @ControllerLogging
+    @ControllerLogging(mode = LoggingMode.ON_ERROR)
     public ResponseEntity<Map<Integer, EquipInfo>> getEquip() {
         return ResponseEntity.ok(
                 itemMeta.getEquipMap()
@@ -42,7 +43,7 @@ public class MetaController {
     }
 
     @GetMapping("/locale")
-    @ControllerLogging
+    @ControllerLogging(mode = LoggingMode.ON_ERROR)
     public ResponseEntity<Map<LocaleEnum, Map<String, String>>> getLocale(
             @RequestParam String hl
     ) {
@@ -54,7 +55,7 @@ public class MetaController {
     }
 
     @GetMapping("/season")
-    @ControllerLogging
+    @ControllerLogging(mode = LoggingMode.ON_ERROR)
     public ResponseEntity<List<SeasonInfo>> getSeason() {
         return ResponseEntity.ok(
                 seasonMeta.getSeasonMetaList()
@@ -62,7 +63,7 @@ public class MetaController {
     }
 
     @GetMapping("/trait")
-    @ControllerLogging
+    @ControllerLogging(mode = LoggingMode.ON_ERROR)
     public ResponseEntity<List<TraitInfo>> getTrait() {
         return ResponseEntity.ok(
                 traitMeta.getTraitList()
@@ -70,7 +71,7 @@ public class MetaController {
     }
 
     @GetMapping("/tier_range")
-    @ControllerLogging
+    @ControllerLogging(mode = LoggingMode.ON_ERROR)
     public ResponseEntity<Map<TierEnum, TierRangeInfo>> getTierRange(
             @RequestParam(required = false) Integer seasonId
     ) {
