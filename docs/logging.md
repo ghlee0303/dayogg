@@ -65,7 +65,7 @@ jar 매니페스트에서 읽으므로 IDE 로 띄우면 `unknown` 입니다.
 ```mermaid
 flowchart LR
     MDC["MDC<br/>code · jobId · idempotentKey"] --> Enc
-    LC["LogContext<br/>(ThreadLocal 누적)"] -->|"PARENT flush<br/>drainMap()"| KV
+    LC["LogContext<br/>(ThreadLocal 누적)"] -->|"최외곽 프레임 flush<br/>drainMap()"| KV
     SL["StructuredLog<br/>addKeyValue"] --> KV["로그 이벤트 key-value"]
     KV --> Enc["ECS 인코더"]
     Enc --> Out(["stdout · JSON 1줄"])
@@ -74,7 +74,7 @@ flowchart LR
 | | 역할 | 언제 나가나 | 값 타입 |
 |---|---|---|---|
 | **MDC** | 요청·잡 전체를 잇는 추적 축 | 같은 스레드의 **모든 이벤트**에 자동 부착 | String 만 |
-| **LogContext** | 여러 메서드에 걸쳐 값 누적 | `@ServiceLogging(PARENT)` 종료 시 한 번에 | Object (숫자 보존) |
+| **LogContext** | 여러 메서드에 걸쳐 값 누적 | 최외곽 `@ServiceLogging` 종료 시 한 번에 | Object (숫자 보존) |
 | **StructuredLog** | 그 자리에서 이벤트 하나 발행 | `.log()` 즉시 | Object (숫자 보존) |
 
 ## 어떻게 남기는가
@@ -82,10 +82,10 @@ flowchart LR
 ### 1. 서비스 안에서 도메인 값 — `LogContext`
 
 `@ServiceLogging` 이 붙은 메서드 안이면 값만 쌓아두면 됩니다.
-PARENT 가 끝날 때 `drainMap()` 으로 꺼내져 한 이벤트의 필드가 됩니다.
+사슬의 최외곽이 끝날 때 `drainMap()` 으로 꺼내져 한 이벤트의 필드가 됩니다.
 
 ```java
-@ServiceLogging(loggingType = LoggingType.PARENT)
+@ServiceLogging
 public SseJobResult refresh(Long playerId) {
     LogContext.put("playerId", playerId);   // → "playerId":123
     ...
@@ -97,16 +97,24 @@ LogContext.addLong("apiCount", 1L);         // → "apiCount":3
 ```
 
 `Long`·`Integer` 를 그대로 넣으면 JSON 숫자로 나갑니다.
-flush 해줄 PARENT 가 없으면 **값은 그냥 버려집니다.**
 
-기본값인 CHILD 는 자기 로그를 남기지 않고 **소요 시간만 컨텍스트에 넣습니다.**
-바깥 PARENT 가 flush 할 때 메서드명이 곧 필드명이 됩니다.
+**한 줄을 낼 프레임은 선언하지 않습니다.** 스레드에서 `@ServiceLogging` 에 가장 먼저 진입한
+프레임이 자동으로 그 역할을 맡습니다. 안쪽 프레임은 자기 로그를 남기지 않고 **소요 시간만
+컨텍스트에 넣고**, 최외곽이 flush 할 때 메서드명이 곧 필드명이 됩니다.
 
 ```java
-@ServiceLogging                                  // CHILD
+@ServiceLogging
 public BattleResultApiResult fetchNewBattleResult(PlayerDto player) { ... }
-// → 바깥 PARENT 로그에 "fetchNewBattleResult":1840 으로 실린다
+// → 최외곽 로그에 "fetchNewBattleResult":1840 으로 실린다
 ```
+
+|  | 성공 | 실패 |
+|---|---|---|
+| **최외곽** | INFO 1줄 + flush | ERROR 1줄 + flush |
+| **안쪽** | 로그 없음, 소요 시간만 적립 | 발원지를 `failedAt` 에 남기고 전파 |
+
+실패해도 flush 하므로 쌓인 값이 버려지지 않습니다. 안쪽에서 터졌다면 어느 메서드였는지가
+`failedAt` 필드로 그 한 줄에 실립니다.
 
 ### 2. AOP 밖에서 — `StructuredLog`
 
@@ -170,13 +178,49 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 | `code` · `jobId` · `idempotentKey` | MDC |
 | `layer` | `controller` / `service` / `sse` / `api` / `redis` / `meta` / `exception` / `lifecycle` |
 | `method` · `elapsedMs` | `@ServiceLogging` |
-| `http.method` · `http.uri` · `client.ip` · `tag` | `@ControllerLogging` |
+| `http.method` · `http.uri` · `http.status` · `client.ip` · `tag` | `@ControllerLogging` |
 | `error.type` · `error.message` | 실패 경로 |
 | 그 외 | `LogContext` · `addKeyValue` 로 넣은 도메인 값 |
 
 점(`.`)이 든 필드는 JSON 에서 **중첩 객체**가 됩니다 — `http.uri` → `{"http":{"uri":...}}`.
 
 인코더가 기본으로 붙이는 `service` · `process` · `ecs` 블록은 [설정](#설정)의 `json.exclude` 로 빠져 **나오지 않습니다.**
+
+`http.status` 는 **알 수 있을 때만** 나갑니다 — 컨트롤러가 `ResponseEntity` 를 반환했거나
+`BusinessException` 이 올라온 경우입니다.
+
+## 컨트롤러 로그 레벨
+
+`@ControllerLogging` 은 **요청 결과로 레벨을 정합니다.** `mode` 가 바꾸는 것은 마지막 줄,
+즉 아무 문제 없이 끝난 요청의 레벨뿐입니다.
+
+| 상황 | `ALWAYS` (기본) | `ON_ERROR` |
+|---|---|---|
+| 예외 — `BusinessException` 4xx | WARN | WARN |
+| 예외 — 그 외 (5xx · 런타임 · checked) | ERROR | ERROR |
+| 정상 반환인데 `http.status` 가 4xx / 5xx | WARN / ERROR | WARN / ERROR |
+| 정상인데 `elapsedMs > slowMs` (기본 1000) | WARN | WARN |
+| 그 외 정상 | **INFO** | **DEBUG** |
+
+```java
+@ControllerLogging(mode = LoggingMode.ON_ERROR)   // 평상시 조용, 문제일 때만 올라온다
+@ControllerLogging(mode = LoggingMode.ON_ERROR, slowMs = 300)
+```
+
+`ON_ERROR` 의 정상 경로가 DEBUG 인 것은 **끄는 것과 같습니다** — 운영은 `eternal_return.dayogg: info`
+라 나가지 않아 수집 비용이 0 이고, 레벨이 꺼져 있으면 IP 추출·이벤트 조립 자체를 건너뜁니다.
+로컬에서 레벨만 `debug` 로 내리면 같은 줄이 그대로 다시 보입니다.
+
+**4xx 를 ERROR 로 올리지 않는 기준은 [설정](#설정)의 `DefaultHandlerExceptionResolver: off` 와 같습니다** —
+클라이언트가 요청을 잘못 보낸 것이지 서버 장애가 아닙니다. 다만 그쪽과 달리 이 줄은
+`code` · `http.uri` · `http.status` · `error.type` 을 갖고 있어 질의가 됩니다.
+
+`code` 는 `ON_ERROR` 여도 **항상** MDC 에 들어갑니다. 이 Aspect 가 조용한 것과 무관하게
+하위 `@ServiceLogging` 로그와 예외 로그는 같은 축으로 묶여야 하기 때문입니다.
+
+> 상태 코드는 **컨트롤러 반환값**에서 읽습니다. `@Around` 는 `ResponseEntity` 가 응답에 반영되기
+> *전에* 끝나므로 그 시점의 `response.getStatus()` 는 아직 200 이라 쓸 수 없습니다.
+> `ResponseEntity` 가 아닌 반환 타입을 쓰면 4xx/5xx 판정이 빠집니다.
 
 ## 실제 출력
 
@@ -185,7 +229,7 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 ```json
 {"message":"[GET /player/sse/refresh] done","code":"A1B2C3","jobId":"X9Y8Z7",
  "idempotentKey":"player-refresh:123",
- "layer":"controller","http":{"method":"GET","uri":"/player/sse/refresh"},
+ "layer":"controller","http":{"method":"GET","uri":"/player/sse/refresh","status":200},
  "client":{"ip":"1.2.3.4"},"tag":"player-refresh","elapsedMs":12}
 
 {"message":"[refresh] done","jobId":"X9Y8Z7","idempotentKey":"player-refresh:123","layer":"service",
@@ -197,11 +241,11 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 ```
 
 컨트롤러는 SSE 잡을 던지고 바로 반환하므로 `elapsedMs` 가 짧습니다.
-`refresh` 는 PARENT 하나뿐이라 하위 CHILD 의 소요 시간(`fetchNewBattleResult`)과
+`refresh` 가 잡 스레드의 최외곽이라 안쪽 메서드의 소요 시간(`fetchNewBattleResult`)과
 `ApiService` 가 누적한 값(`apiMillis`·`apiCount`)이 **한 줄로 합쳐집니다.**
 잡 로그에 `code` 가 없는 것은 의도된 설계입니다 — 대신 `jobId` 로 이어집니다.
 
-> 같은 CHILD 를 여러 번 호출하면 키가 덮어써져 **마지막 값만** 남습니다
+> 같은 안쪽 메서드를 여러 번 호출하면 키가 덮어써져 **마지막 값만** 남습니다
 > (`resolveTier` 는 게임 수만큼 호출되지만 1회분만 찍힙니다).
 > 합계가 필요하면 `apiMillis` 처럼 `addLong` 으로 누적해야 합니다.
 

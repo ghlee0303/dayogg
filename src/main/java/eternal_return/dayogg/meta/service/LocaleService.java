@@ -1,6 +1,5 @@
 package eternal_return.dayogg.meta.service;
 
-import eternal_return.dayogg.core.annotation.service_logging.LoggingType;
 import eternal_return.dayogg.core.annotation.service_logging.ServiceLogging;
 import eternal_return.dayogg.core.api.ApiService;
 import eternal_return.dayogg.meta.meta.LocaleMeta;
@@ -23,7 +22,7 @@ public class LocaleService {
     private final ApiService apiService;
     private final ObjectMapper objectMapper;
 
-    @ServiceLogging(loggingType = LoggingType.PARENT)
+    @ServiceLogging
     public LocaleMeta getL10n() {
         LocaleMeta localeMeta = new LocaleMeta();
 

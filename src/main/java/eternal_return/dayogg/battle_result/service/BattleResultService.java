@@ -14,7 +14,6 @@ import eternal_return.dayogg.battle_result.repository.BattleResultDslRepository;
 import eternal_return.dayogg.battle_result.repository.condition.BattleResultRangeCondition;
 import eternal_return.dayogg.common.utils.EnumUtils;
 import eternal_return.dayogg.tier.enums.TierEnum;
-import eternal_return.dayogg.core.annotation.service_logging.LoggingType;
 import eternal_return.dayogg.core.annotation.service_logging.ServiceLogging;
 import eternal_return.dayogg.player.dto.PlayerDto;
 import eternal_return.dayogg.tier.TierService;

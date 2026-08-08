@@ -1,6 +1,5 @@
 package eternal_return.dayogg.meta.service;
 
-import eternal_return.dayogg.core.annotation.service_logging.LoggingType;
 import eternal_return.dayogg.core.annotation.service_logging.ServiceLogging;
 import eternal_return.dayogg.core.api.ApiService;
 import eternal_return.dayogg.meta.json.WeaponJson;
@@ -21,7 +20,7 @@ public class WeaponService {
 
     private static final String API_PATH = "v2/data/ItemWeapon";
 
-    @ServiceLogging(loggingType = LoggingType.PARENT)
+    @ServiceLogging
     public List<EquipInfo> getWeapon() {
         List<WeaponJson> weapons = objectMapper.treeToValue(
                 apiService.callApi(API_PATH).get("data"),
