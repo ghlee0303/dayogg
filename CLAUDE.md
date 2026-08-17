@@ -99,7 +99,7 @@
 | Framework | Spring Boot 4.0.0 |
 | Build | Gradle |
 | DB | MySQL 8.0+ (`eternal_return` 스키마) |
-| Cache | Redis (localhost:6379) |
+| Cache | Redis (`REDIS_HOST` / `REDIS_PORT` 환경변수) |
 | ORM | Spring Data JPA + QueryDSL 7.0 (openfeign) |
 | Mapping | MapStruct 1.5.5 |
 | JSON | Jackson 3 (`tools.jackson.*`) |
@@ -112,31 +112,40 @@
 ```
 CLAUDE.md                             # 프로젝트 규칙 (자동 로딩)
 
-claude/                               # 클로드 파일
+claude/                               # 클로드 파일 (git 미추적)
+├── CLAUDE_PLAN.md                    # 계획서 작성 규칙·템플릿
+├── CLAUDE-REPORT.md                  # 보고서 작성 규칙
+├── CLAUDE-CODE_REVIEW.md             # 코드 리뷰 문서 작성 규칙
 ├── docs/                             # 작업 예정 계획서 (미구현 설계·계획 문서)
-└── result/                           # 클로드가 생성한 파일
+├── report/                           # 보고서
+└── code_review/                      # 코드 리뷰 결과
 
 src/main/java/eternal_return/dayogg/
 ├── DayoGGBackApplication.java        # 앱 진입점 (@EnableScheduling)
 ├── battle_result/                    # 외부 API 호출 → 전투 결과 저장
 ├── statistics/                       # 전투 결과 집계 → 통계 산출
-│   ├── condition/ predicate/ extend/ map_key/
-│   ├── dto/ enums/ repository/ service/
-│   └── StatisticsController.java
+│   ├── Statistics.java
+│   ├── StatisticsController.java
+│   ├── condition/ predicate/ extend/ map_key/ range/
+│   └── dto/ exception/ repository/ service/
 ├── player/                           # 플레이어 프로필 관리
+│   ├── Player.java
 │   ├── client/                       # 외부 사용자 API 클라이언트
-│   ├── controller/ dto/ repository/ service/
+│   ├── controller/ dto/ exception/ repository/ service/
 │   └── player_season/                # 시즌별 플레이어 스냅샷
 ├── tier/                             # MMR 기반 티어 계산
-│   ├── dto/ enums/
-│   ├── top_tier_cut/                 # 최상위 티어 컷 관리
-│   └── TierService.java
+│   ├── TierController.java
+│   ├── TierService.java
+│   ├── dto/ enums/ exception/
+│   └── top_tier_cut/                 # 최상위 티어 컷 관리
 ├── meta/                             # 게임 메타데이터 (시즌·로케일 등)
 │   ├── MetaController.java
-│   ├── dto/ enums/ json/ meta/ service/
+│   ├── config/                       # GlobalMetaConfig (메타 JSON → 빈 로딩)
+│   └── dto/ enums/ json/ meta/ service/
 ├── route_auth/                       # dak.gg 라우트 크롤링 기반 인증
 │   ├── RouteAuth.java
-│   ├── client/ enums/ exception/ repository/ service/
+│   └── client/ enums/ exception/ repository/ service/
+├── health/                           # 헬스 체크 엔드포인트
 ├── common/                           # 공용 Enum, 로깅 컨텍스트, 유틸
 │   ├── enums/
 │   ├── log/                          # LogContext (MDC)
@@ -149,7 +158,7 @@ src/main/java/eternal_return/dayogg/
     │   └── distributed_lock/         # @DistributedLock (Redisson 기반)
     ├── api/                          # 외부 API/크롤링 클라이언트 (ApiService, CrawlingService)
     ├── bucket/                       # Bucket4j Rate Limiter (API/크롤링 버킷 분리)
-    ├── config/                       # GlobalMetaConfig, QueryDslConfig, WebConfig
+    ├── config/                       # QueryDslConfig, WebConfig
     ├── exception/                    # GlobalExceptionHandler, BusinessException
     ├── file/                         # JsonFileService (메타 JSON 로딩)
     ├── idempotent/                   # Redis 기반 멱등성 처리
@@ -159,14 +168,15 @@ src/main/java/eternal_return/dayogg/
 
 src/main/resources/
 ├── application.yml                   # DB/Redis/Scheduler 설정
-├── json/                             # 정적 JSON 리소스
 ├── static/                           # 정적 웹 리소스
 ├── templates/                        # 뷰 템플릿
 └── meta/                             # 게임 메타데이터 JSON
+    ├── item.json armor.json trait.json phase.json credit.json day_duration.json
     ├── tier/                         # 티어 관련 메타
     │   ├── tier_range.json
     │   └── top_tier_cut.json
     └── locale/                       # 로케일별 정적 메타
         ├── season.json
-        └── tier.json
+        ├── tier.json
+        └── weapon.json
 ```
