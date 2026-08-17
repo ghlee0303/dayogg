@@ -31,8 +31,8 @@ import java.util.*;
 @Configuration
 @RequiredArgsConstructor
 public class GlobalMetaConfig {
-    private static final String TOP_TIER_CUT_DEFAULT_PATH = "meta/default/top_tier_cut.json";
-    private static final String TIER_RANGE_PATH = "meta/tier_range.json";
+    private static final String TOP_TIER_CUT_DEFAULT_PATH = "meta/tier/top_tier_cut.json";
+    private static final String TIER_RANGE_PATH = "meta/tier/tier_range.json";
     private static final String ITEM_PATH = "meta/item.json";
     private static final String ARMOR_PATH = "meta/armor.json";
     private static final String PHASE_PATH = "meta/phase.json";
@@ -45,8 +45,23 @@ public class GlobalMetaConfig {
 
     @Bean
     public TopTierCutMeta topTierCutMeta(ObjectMapper objectMapper) {
-        Map<Integer, TopTierCutInfo> map = JsonUtils.readJsonFile(objectMapper, TOP_TIER_CUT_DEFAULT_PATH, new TypeReference<>() {
-        });
+        JsonNode root = JsonUtils.readJsonFileToNode(objectMapper, TOP_TIER_CUT_DEFAULT_PATH);
+        Map<Integer, TopTierCutInfo> map = new HashMap<>();
+
+        for (JsonNode entry : root) {
+            TopTierCutInfo info = new TopTierCutInfo(
+                    entry.get("demiGodRank").asInt(),
+                    entry.get("demiGodCut").asInt(),
+                    entry.get("eternityRank").asInt(),
+                    entry.get("eternityCut").asInt()
+            );
+
+            // 같은 컷을 공유하는 시즌 ID들을 모두 등록
+            for (JsonNode seasonId : entry.get("SeasonId")) {
+                map.put(seasonId.asInt(), info);
+            }
+        }
+
         return new TopTierCutMeta(map);
     }
 
