@@ -1,0 +1,22 @@
+# 운영(EC2) 로그를 같은 Grafana 에서 보기 위한 CloudWatch 데이터소스.
+# 로컬 로그는 Loki, 운영 로그는 여기 — 앱 코드/설정은 건드리지 않는다.
+# run-local.ps1 이 GF_PATHS_PROVISIONING 으로 이 디렉터리를 가리키므로 파일만 두면 자동 등록된다.
+apiVersion: 1
+
+datasources:
+  - name: CloudWatch
+    uid: cloudwatch-dayogg
+    type: cloudwatch
+    access: proxy
+    # 기본 데이터소스는 Loki 로 둔다. Explore 에서 드롭다운으로 바꿔 쓴다.
+    isDefault: false
+    editable: false
+    jsonData:
+      # 키를 이 파일에 적지 않는다. ~/.aws/credentials 의 프로파일을 읽는다.
+      # (리포에 시크릿이 들어갈 여지를 원천 차단)
+      authType: credentials
+      profile: dayogg-logs
+      defaultRegion: ap-northeast-2
+      # 로그 그룹 선택창의 기본값. 안 잡히면 Explore 에서 직접 골라도 된다.
+      defaultLogGroups:
+        - /dayogg/app

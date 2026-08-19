@@ -1,0 +1,28 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "LogsInsightsQuery",
+      "Effect": "Allow",
+      "Action": [
+        "logs:StartQuery",
+        "logs:GetLogGroupFields",
+        "logs:GetLogEvents",
+        "logs:FilterLogEvents",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": "arn:aws:logs:ap-northeast-2:*:log-group:/dayogg/app:*"
+    },
+    {
+      "Sid": "ResourceLevelUnsupported",
+      "Effect": "Allow",
+      "Action": [
+        "logs:StopQuery",
+        "logs:GetQueryResults",
+        "logs:DescribeLogGroups",
+        "ec2:DescribeRegions"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

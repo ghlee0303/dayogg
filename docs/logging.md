@@ -263,7 +263,7 @@ SSE 는 요청 스레드와 잡 실행 스레드가 갈리고, `joinOrCreate` �
 
 JSON 을 눈으로 훑는 대신 **필드로 펼쳐 보고 조건 질의**를 하려고 로컬에만 관측 스택을 둡니다.
 **배포에는 적용하지 않습니다** — 전부 로컬에서만 도는 별도 프로세스이고,
-`logs/app.json` 도 `local` 프로파일에서만 생깁니다. 운영 조회는 CloudWatch 로 갑니다(맨 아래).
+`logs/app.json` 도 `local` 프로파일에서만 생깁니다. 운영 조회는 CloudWatch 로 갑니다(다음 절).
 
 설정은 `observability/` 에 있습니다.
 
@@ -311,6 +311,106 @@ cd observability
 > LogQL 에서 `http.uri` 가 아니라 **`http_uri`** 로 접근해야 합니다 (`log.level` → `log_level`).
 > 최상위 필드(`code`·`elapsedMs`·`playerId`)는 이름 그대로입니다.
 
+## 조회 — 운영 (Grafana + CloudWatch)
+
+운영 컨테이너는 `docker logs` 로 볼 수 없습니다. `docker-compose.prod.yml` 이 awslogs 드라이버에
+`cache-disabled: "true"` 를 주어 읽기용 로컬 사본을 남기지 않기 때문입니다 (EC2 디스크 절약).
+**운영 로그 창구는 CloudWatch 뿐입니다.**
+
+```
+컨테이너 stdout → awslogs 드라이버 → /dayogg/app (ap-northeast-2) → Grafana
+```
+
+AWS 콘솔에서 바로 보는 방법은 [deployment.md §C](deployment.md#앱-로그-조회는-cloudwatch) 에 있습니다.
+아래는 **로컬 Grafana 로 보는 방법**입니다 — 콘솔 로그인 없이, 로컬 로그와 같은 화면에서 봅니다.
+
+로컬 뷰어와 **같은 Grafana** 를 씁니다. 데이터소스만 둘입니다.
+
+| 데이터소스 | 대상 | 방향 |
+|---|---|---|
+| Loki | 로컬 `logs/app.json` | Alloy 가 밀어 넣음 (push) |
+| CloudWatch | 운영 `/dayogg/app` | Grafana 가 질의 시점에 가져옴 (pull) |
+
+CloudWatch 쪽은 **아무것도 적재하지 않습니다.** `Run query` 를 누른 그 순간에만 AWS API 를 호출하고
+결과만 그립니다. 안 보면 비용이 0 입니다.
+
+**설정 파일**
+
+| | |
+|---|---|
+| `observability/grafana-provisioning/datasources/cloudwatch.yml` | 데이터소스 정의 (Grafana 기동 시 자동 등록) |
+| `observability/aws-readonly-policy.json` | 붙일 IAM 정책 |
+| `%USERPROFILE%\.aws\credentials` 의 `[dayogg-logs]` 프로파일 | 액세스 키 — **리포 밖** |
+
+키가 리포에 들어갈 여지를 없애려고 `authType: credentials` 로 프로파일을 읽습니다.
+프로파일 이름은 `cloudwatch.yml` 의 `profile` 값과 같아야 합니다.
+
+**최초 1회 세팅**
+
+1. IAM → 정책 생성 → `aws-readonly-policy.json` 내용을 JSON 탭에 붙여넣기 → 이름 `dayogg-logs-read`
+2. IAM → 사용자 생성 `grafana-logs-reader` (콘솔 접근 체크 해제) → 위 정책 직접 연결
+3. 보안 자격 증명 → 액세스 키 만들기 → **AWS 외부에서 실행되는 애플리케이션**
+4. `%USERPROFILE%\.aws\credentials` 작성 — **확장자 없음, BOM 없음**
+
+```ini
+[dayogg-logs]
+aws_access_key_id = AKIA...
+aws_secret_access_key = ...
+```
+
+정책은 `/dayogg/app` 한 그룹의 **읽기만** 허용합니다. 계정의 다른 로그 그룹(`RDSOSMetrics` 등)은
+목록에는 보이지만 질의하면 거부됩니다.
+
+> 데이터소스 정의도 자격증명도 **Grafana 기동 시점에만** 읽힙니다.
+> 키를 고쳤으면 `run-local.ps1 stop` → `start` 로 재시작해야 반영됩니다.
+
+**보기**
+
+`http://localhost:3000` → Explore → 좌상단 데이터소스에서 **CloudWatch** 선택.
+
+편집기 둘째 줄 가운데 드롭다운이 쿼리 모드입니다 — **라벨이 없어서 찾기 어렵습니다.**
+기본값 `CloudWatch Metrics` 를 `CloudWatch Logs` 로 바꿔야 로그 편집기가 나옵니다.
+
+```
+Region: default ▾   [ CloudWatch Metrics ▾ ]   Metric Search ▾
+                      ↑ 이것을 CloudWatch Logs 로
+```
+
+로그 그룹은 `cloudwatch.yml` 의 `defaultLogGroups` 덕분에 `/dayogg/app` 이 미리 선택돼 있습니다.
+
+```sql
+fields @timestamp, log.level, layer, message, elapsedMs
+| sort @timestamp desc | limit 50
+
+fields @timestamp, log.logger, message, error.type, error.message
+| filter log.level = "ERROR"
+| sort @timestamp desc
+
+fields @timestamp, code, http.uri, elapsedMs
+| filter layer = "controller" and elapsedMs > 1000
+| sort elapsedMs desc
+
+fields @timestamp, layer, method, message, elapsedMs
+| filter code = "A1B2C3"
+| sort @timestamp asc
+
+filter layer = "controller"
+| stats count(*) as cnt, avg(elapsedMs) as avgMs, max(elapsedMs) as maxMs by http.uri
+| sort avgMs desc
+```
+
+네 번째가 [추적 축](#추적-축--code-와-jobid) 을 그대로 쓰는 질의입니다 — 컨트롤러 로그에서 `code` 를 집어
+그 요청이 어느 서비스에서 시간을 썼는지 한 번에 봅니다. SSE 는 `code` 대신 `jobId` 로 같은 일을 합니다.
+
+> **중첩 필드 표기가 Loki 와 다릅니다.** Logs Insights 는 `http.uri` · `log.level` 을 **점 그대로** 씁니다.
+> `_` 로 평탄화하는 쪽은 LogQL 입니다.
+
+`stats` 질의는 결과 패널 우상단에서 **Table** 로 바꿔야 표가 제대로 보입니다.
+
+> **스캔량이 곧 요금입니다.** `filter` 는 스캔량을 줄이지 못합니다 — 줄이는 것은 **시간 범위**뿐입니다.
+> `limit` 은 반환 건수만 줄일 뿐 요금과 무관합니다. 좁은 범위로 시작해 넓히고,
+> 대시보드에 auto-refresh 패널을 두지 않습니다.
+
 ## 조회 — 그 외
 
 Grafana 를 안 띄웠거나 한 줄만 확인하면 될 때.
@@ -319,12 +419,13 @@ Grafana 를 안 띄웠거나 한 줄만 확인하면 될 때.
 Get-Content logs/app.json -Tail 1 | ConvertFrom-Json
 ```
 
-운영 서버는 컨테이너로 도니 stdout 을 그대로 파싱하면 됩니다.
+**운영 서버에서는 `docker logs` 로 앱 로그가 나오지 않습니다.** awslogs 드라이버에
+`cache-disabled: "true"` 가 걸려 읽기용 로컬 사본을 남기지 않기 때문입니다 —
+운영 로그는 위 [조회 — 운영](#조회--운영-grafana--cloudwatch) 으로 봅니다.
+
+아래는 로컬 `docker-compose.yml` 로 띄웠을 때만 통합니다 (`json-file` 드라이버 기본값).
 
 ```bash
 docker logs app | jq 'select(.playerId==123)'
 docker logs app | jq 'select((.elapsedMs//0) > 1000) | {code, method, elapsedMs}'
 ```
-
-운영 조회는 CloudWatch Logs Insights 로 갑니다 — 아직 적용 전입니다.
-[CloudWatch 남은 작업](../claude/docs/cloudwatch-open-items.md) 참고.

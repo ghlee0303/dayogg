@@ -120,6 +120,9 @@ fields @timestamp, method, `error.message`
 
 점(`.`) 든 필드는 백틱으로 감싼다. `code`·`elapsedMs`·`playerId` 는 그냥 쓴다.
 
+콘솔 대신 **로컬 Grafana** 로 같은 로그를 질의할 수도 있다 —
+[logging.md 조회 — 운영](logging.md#조회--운영-grafana--cloudwatch) 참고.
+
 알아둘 것:
 
 - **보존기간 14일.** 새 로그 그룹의 기본값은 무기한이라 영원히 과금된다. 그룹을 새로 만들면
