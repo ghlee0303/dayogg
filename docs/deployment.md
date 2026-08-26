@@ -50,10 +50,10 @@ cat deploy_key                                  # 이 개인키 전체를 SSH_KE
 | `SSH_KEY` | `deploy_key` (개인키) 내용 전체 |
 | `SSH_PORT` | SSH 포트 (22면 생략 가능) |
 | `DEPLOY_PATH` | `/home/ubuntu/dayogg` (2번에서 만든 폴더) |
-| `GHCR_TOKEN` | ghcr pull용 PAT — 아래 참고 |
 
-**GHCR_TOKEN 발급**: GitHub → Settings → Developer settings → Personal access tokens (classic) → `read:packages`만 체크해서 생성합니다.
-이미지 패키지를 public으로 바꾸면 이 토큰은 생략할 수 있습니다 (레포 → Packages → dayogg → Package settings → Change visibility).
+> 이미지 패키지(`ghcr.io/ghlee0303/dayogg`)는 **public**이라 서버 pull에 별도 토큰이 필요 없습니다.
+> private으로 두려면 `read:packages` 스코프의 classic PAT를 `GHCR_TOKEN` 시크릿으로 등록하고
+> `deploy.yml`의 `docker login ghcr.io` 줄을 되살립니다.
 
 ### 5. 서버 방화벽 (선택)
 
@@ -187,7 +187,7 @@ app 정지 → TRUNCATE → `FLUSHALL` → 재기동까지 한 번에 수행하�
 
 ### 자주 막히는 것
 
-- **Actions에서 ghcr pull 실패** → 이미지가 private인데 `GHCR_TOKEN`이 없거나 만료됨. 토큰을 재발급하거나 패키지를 public으로 전환합니다.
+- **Actions에서 `denied` 로 ghcr pull 실패** → 이미지 패키지가 다시 private으로 돌아갔거나(포크·재생성 시 기본값), private 운영 중인데 `GHCR_TOKEN`이 만료됨. 패키지를 public으로 되돌리거나 토큰을 재발급합니다.
 - **app이 RDS 연결 실패** → ① `.env`의 `DB_HOST`(RDS 엔드포인트)·`DB_USERNAME`·`DB_PASSWORD` 확인. ② **RDS 보안그룹**이 EC2 보안그룹(또는 프라이빗 IP)에서 3306 인바운드를 허용하는지 확인. ③ RDS가 같은 VPC 프라이빗에 있는지 확인.
 - **app 기동 시 스키마 검증 실패**(validate) → RDS에 스키마가 아직 없거나 엔티티와 불일치. 최초 1회는 기존 DB를 `mysqldump` → RDS import로 옮겨야 합니다 (아래 D 참고). 스키마가 맞으면 정상 기동합니다.
 - **8080 접속 안 됨** → `ufw allow 8080` 했는지, 클라우드면 보안그룹/인바운드 규칙도 확인합니다.
