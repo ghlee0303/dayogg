@@ -13,7 +13,8 @@ public class RouteAuthScheduler {
 
     private final RouteAuthService routeAuthService;
 
-    @Scheduled(fixedRate = 60_000L)
+    // route_auth 도메인 보류 — 스케줄러 비활성화 (재개하려면 @Scheduled 주석 해제)
+    // @Scheduled(fixedRate = 60_000L)
     public void verifyPendingAuths() {
         for (RouteAuth auth : routeAuthService.findPendingAuthList()) {
             try {
