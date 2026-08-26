@@ -76,7 +76,10 @@ jobs:
             docker image prune -af
             docker builder prune -af
             docker container prune -f
-            # 이미지 패키지는 public 이라 pull 에 로그인 불필요
+            # 이미지 패키지는 public 이라 로그인 불필요.
+            # 예전 배포가 남긴 만료된 ghcr 자격증명이 있으면 익명 fallback 대신
+            # 그 토큰으로 pull 을 시도해 denied 가 나므로 먼저 걷어낸다.
+            docker logout ghcr.io || true
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
             docker image prune -f   # 교체돼 미참조가 된 옛 이미지 즉시 회수
