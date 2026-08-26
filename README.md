@@ -3,7 +3,8 @@
 배틀로얄 게임 **Eternal Return**의 전적을 수집하고 통계로 가공해 제공하는 백엔드 서비스입니다.
 
 - **개인 프로젝트** — 백엔드 설계·구현 단독 담당 (프론트엔드는 별도 저장소)
-- **현재 상태** — 로컬 실행 단계, 미배포
+- **데모** — https://dayogg.vercel.app/
+- **배포** — AWS EC2에서 운영 중 · `production` 브랜치 push 시 GitHub Actions로 자동 배포 ([상세](docs/deployment.md))
 - Java 21 · Spring Boot 4.0.0 · MySQL · Redis / 자바 파일 약 190개, 8개 도메인 패키지
 
 공식 API에서 플레이어 전적을 수집해 저장하고, 이를 티어·캐릭터별 통계로 집계해 조회 API로 제공합니다. 수집은 수십 초가 걸리는 작업이라 SSE로 결과를 전달합니다.
@@ -22,10 +23,12 @@
 |------|------|
 | Language | Java 21 (Virtual Threads) |
 | Framework | Spring Boot 4.0.0 |
-| DB | MySQL 8.0+ (`eternal_return` 스키마) |
+| DB | MySQL 8.0+ (`eternal_return` 스키마 · 운영은 AWS RDS) |
 | Cache / Lock | Redis, Redisson (분산 락) |
 | ORM | Spring Data JPA + QueryDSL 7.0 |
 | Rate Limit | Bucket4j (API / 크롤링 버킷 분리) |
+| 배포 | Docker Compose · GitHub Actions · ghcr.io · AWS EC2 |
+| 관측성 | 구조화 로깅(ECS JSON) → AWS CloudWatch Logs |
 
 ## 시스템 개요
 
@@ -71,6 +74,8 @@ flowchart TD
 | `GET` | `/tier/range` | 티어 구간 조회 |
 | `GET` | `/meta/equip` `/meta/locale` `/meta/season` `/meta/trait` `/meta/tier_range` | 게임 메타데이터 조회 |
 
+> 사용자 인증 레이어는 두지 않았습니다. 공개 전적 조회 서비스로 설계했고, 트래픽 남용은 API 레이트 리밋(10 RPS)과 CORS 허용 출처 제한으로 관리합니다.
+
 ## 프로젝트 구조
 
 ```
@@ -86,6 +91,33 @@ src/main/java/eternal_return/dayogg/
 └── core/                        # 인프라 (AOP, SSE, Redis, 스레드, 예외 처리 등)
 ```
 
+## 배포 · 운영
+
+`production` 브랜치에 push하면 GitHub Actions가 이미지를 빌드해 ghcr.io에 올리고, 서버에 SSH로 접속해 새 이미지로 교체합니다.
+
+```mermaid
+flowchart LR
+    Push(["production push"]) --> GA["GitHub Actions"]
+    GA -->|"docker build"| GHCR[("ghcr.io<br/>이미지 레지스트리")]
+    GA -->|"SSH: pull & 재기동"| EC2
+
+    subgraph EC2["AWS EC2 · Docker Compose"]
+        App["app 컨테이너<br/>(Spring Boot)"]
+        Redis["redis 컨테이너<br/>(캐시 · 분산 락)"]
+    end
+
+    GHCR -.->|"pull"| App
+    App -->|"JDBC"| RDS[("AWS RDS<br/>MySQL")]
+    App -->|"stdout (ECS JSON)"| CW["CloudWatch Logs<br/>/dayogg/app"]
+```
+
+- **DB 분리** — 운영 MySQL은 EC2 메모리 절약을 위해 RDS로 분리, Redis는 캐시·분산 락 용도라 EC2 컨테이너로 유지
+- **로그 조회** — 앱 로그는 `awslogs` 드라이버로 CloudWatch에 적재, Logs Insights에서 `elapsedMs`·`code`·`jobId` 필드 단위로 질의
+- **스키마 안전장치** — 운영은 `JPA_DDL_AUTO=validate`로 기동해 엔티티·스키마 불일치 시 조용한 손상 대신 기동을 실패시킴
+- **디스크 관리** — EC2 디스크가 빠듯해 배포 스크립트(`scripts/dayogg_script`)가 이미지 pull 전에 미참조 이미지·빌드 캐시를 자동 정리
+
+절차와 트러블슈팅은 [배포 문서](docs/deployment.md)에 정리했습니다.
+
 ## 문서
 
 ### 프로젝트 주제 (상세)
@@ -97,5 +129,6 @@ src/main/java/eternal_return/dayogg/
 ### 그 외
 
 - [시작하기](docs/getting-started.md) — 요구 사항, 환경 변수, 실행·빌드, `application.yml` 설정값
+- [배포](docs/deployment.md) — CI/CD 파이프라인, 서버 최초 세팅, RDS 이관, 트러블슈팅
 - [코드 컨벤션](docs/conventions.md) — 계층 구조, QueryDSL·MapStruct·AOP 로깅, 예외 처리, 버킷 사용 규칙
 - [구조화 로깅](docs/logging.md) — JSON 로그 구조, `LogContext`·MDC·`StructuredLog` 사용법, `code`·`idempotentKey` 추적 축
