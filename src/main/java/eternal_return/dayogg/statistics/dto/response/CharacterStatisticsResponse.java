@@ -1,6 +1,6 @@
 package eternal_return.dayogg.statistics.dto.response;
 
-import eternal_return.dayogg.common.utils.ListUtils;
+import eternal_return.dayogg.statistics.weapon.WeaponSplitGroup;
 import eternal_return.dayogg.statistics.extend.AverageStatistics;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,9 +17,11 @@ public class CharacterStatisticsResponse extends AverageStatisticsResponse {
     @Setter
     public static class WeaponResponse extends AverageStatisticsResponse {
         private Integer weaponNum;
+        private Integer equipWeaponCode; // weaponNum이 같아도 착용 무기로 분리해야 하는 경우의 대표 아이템 코드 (예: 에키온)
 
-        public WeaponResponse(Integer weaponNum) {
+        public WeaponResponse(Integer weaponNum, Integer equipWeaponCode) {
             this.weaponNum = weaponNum;
+            this.equipWeaponCode = equipWeaponCode;
         }
     }
 
@@ -29,24 +31,34 @@ public class CharacterStatisticsResponse extends AverageStatisticsResponse {
     }
 
     public void merge(CharacterStatisticsResponse merged) {
+        super.merge(merged);
         for (WeaponResponse mergedWeapon : merged.weaponList) {
-            merge(mergedWeapon.weaponNum, mergedWeapon);
+            findOrCreateWeapon(mergedWeapon.getWeaponNum(), mergedWeapon.getEquipWeaponCode())
+                    .merge(mergedWeapon);
         }
     }
 
-    public void merge(int weaponNum, AverageStatistics merged) {
+    public void merge(int weaponNum, Integer equipWeaponCode, AverageStatistics merged) {
         super.merge(merged);
 
-        Optional<WeaponResponse> optional = ListUtils.findById(weaponList, weaponNum, WeaponResponse::getWeaponNum);
-        WeaponResponse weapon;
+        Integer groupCode = WeaponSplitGroup.representativeOf(equipWeaponCode);
 
-        if (optional.isEmpty()) {
-            weapon = new WeaponResponse(weaponNum);
-            weaponList.add(weapon);
-        } else {
-            weapon = optional.get();
+        findOrCreateWeapon(weaponNum, null).merge(merged);          // weaponNum 합산 (항상)
+        if (groupCode != null) {
+            findOrCreateWeapon(weaponNum, groupCode).merge(merged); // 대표 코드별 분리
+        }
+    }
+
+    private WeaponResponse findOrCreateWeapon(Integer weaponNum, Integer equipWeaponCode) {
+        for (WeaponResponse weapon : weaponList) {
+            if (Objects.equals(weapon.getWeaponNum(), weaponNum)
+                    && Objects.equals(weapon.getEquipWeaponCode(), equipWeaponCode)) {
+                return weapon;
+            }
         }
 
-        weapon.merge(merged);
+        WeaponResponse created = new WeaponResponse(weaponNum, equipWeaponCode);
+        weaponList.add(created);
+        return created;
     }
 }

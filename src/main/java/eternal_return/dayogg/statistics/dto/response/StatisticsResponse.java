@@ -6,7 +6,6 @@ import eternal_return.dayogg.battle_result.BattleResult;
 import eternal_return.dayogg.common.enums.RangeSideEnum;
 import eternal_return.dayogg.common.utils.ListUtils;
 import eternal_return.dayogg.player.dto.PlayerSeasonDto;
-import eternal_return.dayogg.statistics.Statistics;
 import eternal_return.dayogg.statistics.dto.request.range.StatisticsRequestSide;
 import eternal_return.dayogg.statistics.dto.request.range.StatisticsRangeRequest;
 import eternal_return.dayogg.statistics.extend.AverageStatistics;
@@ -49,20 +48,19 @@ public abstract class StatisticsResponse extends AverageStatisticsResponse {
         AverageStatistics merged = new AverageStatistics(battleResult);
         super.merge(merged);
 
-        mergeCharacter(battleResult.getCharacterNum(), battleResult.getBestWeapon(), merged);
+        mergeCharacter(
+                battleResult.getCharacterNum(),
+                battleResult.getBestWeapon(),
+                battleResult.getEquipments(),
+                merged
+        );
+
         StatisticsResponseSide.merge(
                 this.range,
                 battleResult.getMmrBefore(),
                 battleResult.getStartDtm(),
                 battleResult.getTierEnum()
         );
-    }
-
-    public void merge(Statistics statistics) {
-        super.merge(statistics);
-
-        mergeCharacter(statistics.getCharacterNum(), statistics.getWeaponNum(), statistics);
-        StatisticsResponseSide.merge(this.range, statistics.getRange(), statistics.getTierEnum());
     }
 
     public void merge(StatisticsResponse merged) {
@@ -88,7 +86,7 @@ public abstract class StatisticsResponse extends AverageStatisticsResponse {
         character.merge(merged);
     }
 
-    private void mergeCharacter(int characterNum, int weaponNum, AverageStatistics merged) {
+    private void mergeCharacter(int characterNum, int weaponNum, List<Integer> equipments, AverageStatistics merged) {
         Optional<CharacterStatisticsResponse> optional = ListUtils.findById(characterList, characterNum, CharacterStatisticsResponse::getCharacterNum);
         CharacterStatisticsResponse character;
 
@@ -99,7 +97,8 @@ public abstract class StatisticsResponse extends AverageStatisticsResponse {
             character = optional.get();
         }
 
-        character.merge(weaponNum, merged);
+        Integer equipWeaponCode = (equipments == null || equipments.isEmpty()) ? null : equipments.getFirst();
+        character.merge(weaponNum, equipWeaponCode, merged);
     }
 
     @Getter
