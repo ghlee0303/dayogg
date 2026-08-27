@@ -10,6 +10,7 @@ import java.util.Objects;
 public enum LocaleEnum {
     SKIN("Skin/Name/"),
     CHARACTER("Character/Name/"),
+    EQUIP("Item/Name/"),
     WEAPON("WeaponType/", WeaponEnum.class),
     TIER(TierEnum.class),
     SEASON("meta/locale/season.json", true)
