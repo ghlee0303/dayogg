@@ -1,10 +1,9 @@
 package eternal_return.dayogg.meta.config;
 
 import eternal_return.dayogg.meta.service.SeasonService;
-import eternal_return.dayogg.meta.service.WeaponService;
+import eternal_return.dayogg.meta.service.EquipService;
 import eternal_return.dayogg.tier.enums.TierEnum;
 import eternal_return.dayogg.meta.service.LocaleService;
-import eternal_return.dayogg.meta.json.ArmorJson;
 import eternal_return.dayogg.meta.meta.item.EquipInfo;
 import eternal_return.dayogg.meta.meta.item.ItemInfo;
 import eternal_return.dayogg.meta.meta.item.ItemMeta;
@@ -34,7 +33,6 @@ public class GlobalMetaConfig {
     private static final String TOP_TIER_CUT_DEFAULT_PATH = "meta/tier/top_tier_cut.json";
     private static final String TIER_RANGE_PATH = "meta/tier/tier_range.json";
     private static final String ITEM_PATH = "meta/item.json";
-    private static final String ARMOR_PATH = "meta/armor.json";
     private static final String PHASE_PATH = "meta/phase.json";
     private static final String TRAIT_PATH = "meta/trait.json";
 
@@ -66,24 +64,13 @@ public class GlobalMetaConfig {
     }
 
     @Bean
-    public ItemMeta itemMeta(ObjectMapper objectMapper, WeaponService weaponService) {
+    public ItemMeta itemMeta(ObjectMapper objectMapper, EquipService equipService) {
         Map<Integer, ItemInfo> map = JsonUtils.readJsonFile(objectMapper, ITEM_PATH, new TypeReference<>() {
         });
 
-        List<EquipInfo> equips = new ArrayList<>(weaponService.getWeapon());
-        equips.addAll(readArmor(objectMapper));
+        List<EquipInfo> equips = new ArrayList<>(equipService.getEquips());
 
         return new ItemMeta(map, equips);
-    }
-
-    private List<EquipInfo> readArmor(ObjectMapper objectMapper) {
-        JsonNode data = JsonUtils.readJsonFileToNode(objectMapper, ARMOR_PATH).get("data");
-        List<ArmorJson> armors = objectMapper.treeToValue(data, new TypeReference<>() {
-        });
-
-        return armors.stream()
-                .map(ArmorJson::toEquipInfo)
-                .toList();
     }
 
     @Bean
