@@ -252,6 +252,7 @@ src/main/resources/
 
 ### 문서
 
+- [엔지니어링 의사결정 기록](docs/engineering-decisions.md) — 10 RPS 제약 아래에서 가상 스레드·SSE·멱등·Redis·구조화 로깅을 고른 근거와 대안 비교
 - [동시성 설계](docs/concurrency.md) — 10 RPS 제약, 가상 스레드·SSE·세마포어·멱등 처리
 - [통계 집계 설계](docs/statistics.md) — QueryDSL 조건 객체, 응답 타입 병합, 티어 커트라인
 - [인프라 · 공통 모듈 설계](docs/infrastructure.md) — `core` 패키지, AOP, 예외 일원화
